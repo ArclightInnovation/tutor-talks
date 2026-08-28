@@ -139,12 +139,21 @@
     .metric { background: #f8fafc; border: 1px solid var(--card-border); border-radius: 8px; padding: 18px; text-align: center; }
     .metric-value { color: var(--primary); font-size: 1.6rem; font-weight: 800; }
     .markdown-preview { white-space: pre-wrap; background: #0f172a; color: #e2e8f0; border-radius: 12px; padding: 16px; max-height: 300px; overflow: auto; font: 0.8rem/1.5 ui-monospace, monospace; }
+    .workspace-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+    .compact-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    .status-note { min-height: 20px; font-size: .82rem; color: var(--text-muted); }
+    .data-table { width: 100%; border-collapse: collapse; font-size: .82rem; }
+    .data-table th, .data-table td { padding: 10px; border-bottom: 1px solid var(--card-border); text-align: left; vertical-align: top; }
+    .data-table th { color: var(--text-muted); font-size: .72rem; letter-spacing: .04em; text-transform: uppercase; }
+    .bar-track { height: 8px; background: #e2e8f0; border-radius: 999px; overflow: hidden; min-width: 90px; }
+    .bar-fill { height: 100%; background: var(--primary); border-radius: inherit; }
     @media (max-width: 680px) {
       .student-grid, .landing-grid { grid-template-columns: 1fr !important; }
       header { padding: 0 16px; }
       main { padding: 20px 14px 40px; }
       .card { padding: 18px; }
       .progress-grid { grid-template-columns: 1fr; }
+      .workspace-grid { grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -164,6 +173,9 @@
       <symbol id="i-send" viewBox="0 0 24 24"><path d="m3 4 18 8-18 8 3-8-3-8Z"/><path d="M6 12h15"/></symbol>
       <symbol id="i-volume" viewBox="0 0 24 24"><path d="M5 10v4h4l5 4V6l-5 4H5ZM17 9a4 4 0 0 1 0 6M19 6a8 8 0 0 1 0 12"/></symbol>
       <symbol id="i-spark" viewBox="0 0 24 24"><path d="m12 3 1.4 4.6L18 9l-4.6 1.4L12 15l-1.4-4.6L6 9l4.6-1.4L12 3ZM19 15l.7 2.3L22 18l-2.3.7L19 21l-.7-2.3L16 18l2.3-.7L19 15Z"/></symbol>
+      <symbol id="i-users" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM22 21v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8"/></symbol>
+      <symbol id="i-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M15 9V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h3"/></symbol>
+      <symbol id="i-test" viewBox="0 0 24 24"><path d="M9 3h6M10 3v5l-5 9a3 3 0 0 0 2.6 4h8.8a3 3 0 0 0 2.6-4l-5-9V3M8 15h8"/></symbol>
     </defs>
   </svg>
 
@@ -232,6 +244,8 @@
         <button class="tab-btn active" onclick="switchInstructorTab('tab-classes')"><svg class="icon icon-sm"><use href="#i-book"/></svg> Courses &amp; Class Codes</button>
         <button class="tab-btn" onclick="switchInstructorTab('tab-modules')"><svg class="icon icon-sm"><use href="#i-layers"/></svg> Sectioned Modules</button>
         <button class="tab-btn" onclick="switchInstructorTab('tab-guardrails')"><svg class="icon icon-sm"><use href="#i-shield"/></svg> AI Scaffolding &amp; Guardrails</button>
+        <button class="tab-btn" onclick="switchInstructorTab('tab-sandbox')"><svg class="icon icon-sm"><use href="#i-test"/></svg> Live Tutor Test</button>
+        <button class="tab-btn" onclick="switchInstructorTab('tab-roster')"><svg class="icon icon-sm"><use href="#i-users"/></svg> Roster &amp; Analytics</button>
       </div>
 
       <!-- Tab A: Courses & Class Codes -->
@@ -256,6 +270,13 @@
 
         <label style="font-size: 0.82rem; font-weight: 700; color: var(--text-muted);">Select Course:</label>
         <select id="sel-instructor-course" onchange="renderInstructorModules()"></select>
+
+        <div style="background:var(--primary-light);border:1px solid #cbd9e7;padding:16px;border-radius:9px;display:flex;flex-direction:column;gap:10px;">
+          <div style="font-weight:750;color:var(--primary);display:flex;align-items:center;gap:8px;"><svg class="icon"><use href="#i-spark"/></svg> Auto-Generate All Modules from Syllabus/Text</div>
+          <textarea id="syllabus-source" placeholder="Paste a syllabus, weekly schedule, course outline, or sectioned reading list..."></textarea>
+          <button class="btn-primary" id="btn-auto-modules"><svg class="icon icon-sm"><use href="#i-spark"/></svg> Generate Module Set</button>
+          <div id="auto-module-status" class="status-note" role="status"></div>
+        </div>
 
         <div style="background: #f8fafc; border: 1px solid var(--card-border); padding: 16px; border-radius: 12px; display: flex; flex-direction: column; gap: 10px;">
           <div style="font-weight: 700; font-size: 0.95rem; color: var(--primary);">Add New Module</div>
@@ -304,6 +325,25 @@
         <textarea id="txt-custom-guardrails" placeholder="e.g. Always remind students to cite peer-reviewed literature in APA format..."></textarea>
 
         <button class="btn-primary" id="btn-save-guardrails">Save Guardrail Settings</button>
+      </div>
+
+      <div id="tab-sandbox" class="card" style="display:none;">
+        <div class="card-title"><svg class="icon"><use href="#i-test"/></svg> Live AI Tutor Test Sandbox</div>
+        <p style="font-size:.88rem;color:var(--text-muted);margin:0;">Probe the current prompts and guardrails in an isolated preview. Test messages are never added to student records.</p>
+        <div class="workspace-grid"><div><label style="font-size:.82rem;font-weight:700;">Course</label><select id="sel-sandbox-course" onchange="loadSandboxModules()"></select></div><div><label style="font-size:.82rem;font-weight:700;">Module</label><select id="sel-sandbox-module"></select></div></div>
+        <div class="chat-box" id="sandbox-messages" style="height:300px;"><div class="chat-bubble tutor"><strong>Preview Tutor:</strong> Send an adversarial, off-topic, homework, or normal learning request to inspect the configured behavior.</div></div>
+        <div class="compact-row"><input id="sandbox-input" placeholder="Test a student message..." style="flex:1;"/><button class="btn-primary" id="btn-sandbox-send"><svg class="icon icon-sm"><use href="#i-send"/></svg> Run Test</button><button class="btn-secondary" id="btn-sandbox-clear">Clear</button></div>
+        <div id="sandbox-status" class="status-note" role="status"></div>
+      </div>
+
+      <div id="tab-roster" class="card" style="display:none;">
+        <div class="card-title"><svg class="icon"><use href="#i-users"/></svg> Class Roster &amp; Analytics Dashboard</div>
+        <p style="font-size:.88rem;color:var(--text-muted);margin:0;">Upload one or more student session packages. Files are inspected locally and are not transmitted.</p>
+        <div class="compact-row"><button class="btn-primary" id="btn-roster-upload"><svg class="icon icon-sm"><use href="#i-upload"/></svg> Upload Student .tutor Files</button><button class="btn-secondary" id="btn-roster-clear">Clear Roster</button><input type="file" id="roster-file-input" accept=".tutor,application/json" multiple hidden/></div>
+        <div id="roster-status" class="status-note" role="status"></div>
+        <div class="progress-grid"><div class="metric"><div class="metric-value" id="roster-students">0</div><div>Students</div></div><div class="metric"><div class="metric-value" id="roster-mastery">0%</div><div>Average mastery</div></div><div class="metric"><div class="metric-value" id="roster-sessions">0</div><div>Sessions</div></div></div>
+        <div style="overflow-x:auto;"><table class="data-table"><thead><tr><th>Student</th><th>Course</th><th>Sessions</th><th>Mastery</th><th>Common gaps</th></tr></thead><tbody id="roster-table-body"><tr><td colspan="5">Upload student packages to begin.</td></tr></tbody></table></div>
+        <div><div style="font-weight:700;margin-bottom:8px;">Class-wide concepts and misconceptions</div><div id="class-concept-summary" class="status-note">No class evidence loaded.</div></div>
       </div>
     </div>
 
@@ -422,6 +462,8 @@
     let activeCourseSnapshot = null;
     let currentStudentName = sessionStorage.getItem("tutor_bot_student_name") || "";
     let sessionState = createSessionState();
+    let sandboxTranscript = [];
+    let rosterPackages = [];
 
     function createSessionState() {
       return { version: 1, startedAt: new Date().toISOString(), transcript: [], notes: "" };
@@ -641,11 +683,12 @@
 
     function switchInstructorTab(tabId) {
       document.querySelectorAll('#screen-instructor .tab-btn').forEach(b => b.classList.remove('active'));
-      event.target.classList.add('active');
-      
-      document.getElementById('tab-classes').style.display = tabId === 'tab-classes' ? 'flex' : 'none';
-      document.getElementById('tab-modules').style.display = tabId === 'tab-modules' ? 'flex' : 'none';
-      document.getElementById('tab-guardrails').style.display = tabId === 'tab-guardrails' ? 'flex' : 'none';
+      const selected = Array.from(document.querySelectorAll('#screen-instructor .tab-btn')).find(b => b.getAttribute('onclick')?.includes(`'${tabId}'`));
+      selected?.classList.add('active');
+      ['tab-classes', 'tab-modules', 'tab-guardrails', 'tab-sandbox', 'tab-roster'].forEach(id => {
+        document.getElementById(id).style.display = id === tabId ? 'flex' : 'none';
+      });
+      if (tabId === 'tab-sandbox') loadSandboxModules();
     }
 
     function renderInstructorCourses() {
@@ -653,17 +696,24 @@
       const container = document.getElementById('course-list-container');
       const selModule = document.getElementById('sel-instructor-course');
       const selGuardrail = document.getElementById('sel-guardrail-course');
+      const selSandbox = document.getElementById('sel-sandbox-course');
 
       container.innerHTML = "";
       selModule.innerHTML = "";
       selGuardrail.innerHTML = "";
+      selSandbox.innerHTML = "";
 
       courses.forEach(c => {
         container.innerHTML += `
           <div class="card" style="padding: 14px; background: #f8fafc; flex-direction: row; justify-content: space-between; align-items: center;">
             <div>
               <div style="font-weight: 800; color: var(--text-main);">${c.title}</div>
-              <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">Class Access Code: <strong style="color: var(--primary);">${c.code}</strong> | ${c.modules.length} Modules</div>
+              <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">${c.modules.length} Modules</div>
+              <div class="compact-row" style="margin-top:8px;">
+                <input id="course-code-${c.id}" value="${c.code}" aria-label="Access code for ${c.title}" style="width:180px;text-transform:uppercase;" maxlength="24" />
+                <button class="btn-secondary" onclick="saveAccessCode('${c.id}')">Save Code</button>
+                <button class="btn-secondary" onclick="copyJoinLink('${c.id}', this)"><svg class="icon icon-sm"><use href="#i-copy"/></svg> Copy Student Join Link</button>
+              </div>
             </div>
             <button class="btn-secondary" onclick="deleteCourse('${c.id}')" style="color: var(--accent-red); padding: 4px 10px; font-size: 0.78rem;">Delete</button>
           </div>
@@ -671,7 +721,40 @@
 
         selModule.innerHTML += `<option value="${c.id}">${c.title} (${c.code})</option>`;
         selGuardrail.innerHTML += `<option value="${c.id}">${c.title} (${c.code})</option>`;
+        selSandbox.innerHTML += `<option value="${c.id}">${c.title} (${c.code})</option>`;
       });
+      loadSandboxModules();
+    }
+
+    function normalizedAccessCode(value) {
+      return value.trim().toUpperCase().replace(/[^A-Z0-9-]/g, '').replace(/-+/g, '-').replace(/^-|-$/g, '');
+    }
+
+    function saveAccessCode(courseId) {
+      const courses = getCoursesData();
+      const course = courses.find(c => c.id === courseId);
+      const input = document.getElementById(`course-code-${courseId}`);
+      const code = normalizedAccessCode(input.value);
+      if (code.length < 4) return alert('Use at least four letters, numbers, or hyphens.');
+      if (courses.some(c => c.id !== courseId && c.code.toUpperCase() === code)) return alert('That access code is already in use.');
+      course.code = code;
+      saveCoursesData(courses);
+      renderInstructorCourses();
+    }
+
+    async function copyJoinLink(courseId, button) {
+      const course = getCoursesData().find(c => c.id === courseId);
+      if (!course) return;
+      const url = new URL(window.location.href);
+      url.search = '';
+      url.hash = '';
+      url.searchParams.set('class', course.code);
+      try {
+        await navigator.clipboard.writeText(url.toString());
+      } catch (error) {
+        const helper = document.createElement('textarea'); helper.value = url; document.body.appendChild(helper); helper.select(); document.execCommand('copy'); helper.remove();
+      }
+      const old = button.textContent; button.textContent = 'Join Link Copied'; setTimeout(() => button.innerHTML = `<svg class="icon icon-sm"><use href="#i-copy"/></svg> ${old.trim()}`, 1600);
     }
 
     document.getElementById('btn-create-course').onclick = () => {
@@ -679,7 +762,8 @@
       if (!title) return;
 
       const courses = getCoursesData();
-      const code = `NYU-${Math.floor(100 + Math.random() * 900)}`;
+      let code;
+      do { code = `CLASS-${Math.floor(1000 + Math.random() * 9000)}`; } while (courses.some(c => c.code === code));
       const newCourse = {
         id: `c_${Date.now()}`,
         title: title,
@@ -775,6 +859,43 @@
       }
     };
 
+    function extractJsonArray(text) {
+      const match = text.match(/\[[\s\S]*\]/);
+      if (!match) throw new Error('The AI response did not contain a module list.');
+      const modules = JSON.parse(match[0]);
+      if (!Array.isArray(modules) || !modules.length) throw new Error('No modules were found in the syllabus.');
+      return modules.slice(0, 30).map((module, index) => ({
+        id: `m_${Date.now()}_${index}`,
+        title: String(module.title || `Module ${index + 1}`).slice(0, 160),
+        desc: String(module.desc || module.summary || '').slice(0, 300),
+        content: String(module.content || '').trim()
+      })).filter(module => module.content);
+    }
+
+    document.getElementById('btn-auto-modules').onclick = async () => {
+      const source = document.getElementById('syllabus-source').value.trim();
+      const courseId = document.getElementById('sel-instructor-course').value;
+      const status = document.getElementById('auto-module-status');
+      const button = document.getElementById('btn-auto-modules');
+      if (source.length < 40) return alert('Paste enough syllabus text to identify course sections.');
+      button.disabled = true;
+      status.textContent = 'Analyzing the syllabus and building a complete module sequence...';
+      try {
+        const response = await callGeminiText(`Convert the syllabus below into a complete ordered set of teaching modules. Preserve the syllabus scope and sequence; do not invent assigned facts. Return only a valid JSON array. Each item must have exactly: "title", "desc", and "content". The content must include source-grounded topics, learning objectives, key terms, activities, and likely misconceptions useful as AI tutor retrieval context.\n\nSYLLABUS:\n${source}`);
+        const generated = extractJsonArray(response);
+        if (!generated.length) throw new Error('No source-grounded modules were returned.');
+        const courses = getCoursesData();
+        const course = courses.find(c => c.id === courseId);
+        if (!course) throw new Error('Select a course first.');
+        const replace = !course.modules.length || confirm(`Replace the ${course.modules.length} existing modules? Select Cancel to append the generated set.`);
+        course.modules = replace ? generated : course.modules.concat(generated);
+        saveCoursesData(courses);
+        renderInstructorModules();
+        status.textContent = `${generated.length} modules generated and ${replace ? 'saved as the course sequence' : 'appended to the course'}. Review the module cards below.`;
+      } catch (error) { status.textContent = error.message || 'Module generation failed. Please try again.'; }
+      finally { button.disabled = false; }
+    };
+
     // AI Guardrail Configuration
     function loadCourseGuardrailSettings() {
       const courses = getCoursesData();
@@ -806,6 +927,73 @@
         alert("AI Guardrails & Help Scaffolding settings saved!");
       }
     };
+
+    function loadSandboxModules() {
+      const course = getCoursesData().find(c => c.id === document.getElementById('sel-sandbox-course').value) || getCoursesData()[0];
+      const select = document.getElementById('sel-sandbox-module');
+      if (!select) return;
+      select.innerHTML = course?.modules?.length ? course.modules.map(m => `<option value="${m.id}">${m.title}</option>`).join('') : '<option value="">General course context</option>';
+    }
+
+    function appendSandboxMessage(role, message) {
+      const box = document.getElementById('sandbox-messages');
+      const bubble = document.createElement('div');
+      bubble.className = `chat-bubble ${role === 'student' ? 'student' : 'tutor'}`;
+      const label = document.createElement('strong'); label.textContent = role === 'student' ? 'Test Student:' : 'Preview Tutor:';
+      bubble.append(label, ` ${message}`); box.appendChild(bubble); box.scrollTop = box.scrollHeight;
+    }
+
+    document.getElementById('btn-sandbox-send').onclick = async () => {
+      const input = document.getElementById('sandbox-input'); const message = input.value.trim(); if (!message) return;
+      const course = getCoursesData().find(c => c.id === document.getElementById('sel-sandbox-course').value);
+      const module = course?.modules?.find(m => m.id === document.getElementById('sel-sandbox-module').value) || { title: 'General', content: '' };
+      const status = document.getElementById('sandbox-status'); input.value = ''; appendSandboxMessage('student', message); sandboxTranscript.push({ role:'student', text:message });
+      status.textContent = 'Running against the current saved guardrails...';
+      try {
+        const reply = await callGeminiText(`Act as the student-facing tutor for this isolated instructor test.\nCourse: ${course.title}\nModule: ${module.title}\nModule source: ${module.content || 'General course context'}\nHelp level: ${course.helpLevel}\nBlock direct answers: ${course.blockAnswers}\nEnforce honor code: ${course.honorCode}\nRestrict to course domain: ${course.domainBound}\nInstructor rules: ${course.customGuardrails || 'None'}\nKeep the response concise and obey these guardrails.\nTest history:\n${sandboxTranscript.slice(-8).map(m => `${m.role}: ${m.text}`).join('\n')}\nStudent: ${message}`);
+        sandboxTranscript.push({ role:'tutor', text:reply }); appendSandboxMessage('tutor', reply); status.textContent = 'Test complete. This exchange was not stored in student analytics.';
+      } catch (error) { status.textContent = error.message || 'The test could not be completed.'; }
+    };
+    document.getElementById('sandbox-input').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('btn-sandbox-send').click(); });
+    document.getElementById('btn-sandbox-clear').onclick = () => { sandboxTranscript = []; document.getElementById('sandbox-messages').innerHTML = '<div class="chat-bubble tutor"><strong>Preview Tutor:</strong> Sandbox reset. Send another test message.</div>'; document.getElementById('sandbox-status').textContent = ''; };
+
+    function packageMasteryAverage(data) {
+      const values = Object.values(data.progress?.mastery || {}).map(item => Number(item.percent)).filter(Number.isFinite);
+      return values.length ? Math.round(values.reduce((a,b) => a+b, 0) / values.length) : masteryPercent(data.masteryAssessment || '');
+    }
+
+    function renderRosterAnalytics() {
+      const tbody = document.getElementById('roster-table-body');
+      const students = new Map();
+      rosterPackages.forEach(data => students.set(`${data.course.id}|${data.student.displayName}`, data));
+      const rows = [...students.values()];
+      const averages = rows.map(packageMasteryAverage);
+      document.getElementById('roster-students').textContent = rows.length;
+      document.getElementById('roster-mastery').textContent = `${rows.length ? Math.round(averages.reduce((a,b)=>a+b,0)/rows.length) : 0}%`;
+      document.getElementById('roster-sessions').textContent = rows.reduce((sum,d) => sum + (d.progress?.sessions?.length || 1), 0);
+      tbody.innerHTML = '';
+      const conceptStats = {};
+      rows.forEach(data => {
+        const mastery = Object.values(data.progress?.mastery || {});
+        mastery.forEach(item => { const key = item.title || 'General'; (conceptStats[key] ||= []).push(Number(item.percent) || 0); });
+        const gaps = mastery.filter(item => Number(item.percent) < 70).sort((a,b)=>a.percent-b.percent).slice(0,2).map(item => item.title).join(', ') || 'No flagged gaps';
+        const tr = document.createElement('tr');
+        [data.student.displayName, data.course.title, String(data.progress?.sessions?.length || 1), `${packageMasteryAverage(data)}%`, gaps].forEach((value, i) => { const td=document.createElement('td'); td.textContent=value; if(i===3){const bar=document.createElement('div');bar.className='bar-track';bar.innerHTML=`<div class="bar-fill" style="width:${packageMasteryAverage(data)}%"></div>`;td.appendChild(bar);} tr.appendChild(td); }); tbody.appendChild(tr);
+      });
+      if (!rows.length) tbody.innerHTML = '<tr><td colspan="5">Upload student packages to begin.</td></tr>';
+      const concepts = Object.entries(conceptStats).map(([title, vals]) => ({title, average:Math.round(vals.reduce((a,b)=>a+b,0)/vals.length), students:vals.length})).sort((a,b)=>a.average-b.average);
+      const summary = document.getElementById('class-concept-summary'); summary.innerHTML = '';
+      if (!concepts.length) summary.textContent = 'No concept-level evidence loaded.';
+      else concepts.forEach(item => { const row=document.createElement('div'); row.className='compact-row'; row.style.marginBottom='8px'; const label=document.createElement('span'); label.style.flex='1'; label.textContent=`${item.title} (${item.students} students)`; row.append(label); const value=document.createElement('strong'); value.textContent=`${item.average}%`; row.append(value); summary.append(row); });
+    }
+
+    document.getElementById('btn-roster-upload').onclick = () => document.getElementById('roster-file-input').click();
+    document.getElementById('roster-file-input').addEventListener('change', async event => {
+      let rejected = 0;
+      for (const file of event.target.files) { try { const data=JSON.parse(await file.text()); if(data.format!=='tutor-session'||!data.student?.displayName||!data.course?.id) throw new Error(); rosterPackages.push(data); } catch(error) { rejected++; } }
+      event.target.value=''; renderRosterAnalytics(); document.getElementById('roster-status').textContent = `${rosterPackages.length} valid packages loaded${rejected ? `; ${rejected} files rejected` : ''}. Duplicate student-course records use the latest uploaded package.`;
+    });
+    document.getElementById('btn-roster-clear').onclick = () => { rosterPackages=[]; renderRosterAnalytics(); document.getElementById('roster-status').textContent='Roster data cleared from this workspace.'; };
 
     // Student Portal Logic
     function openStudentPortal(course, resumedSession = null) {
@@ -1162,6 +1350,12 @@ ${buildOptimizedTranscript(sessionState.transcript)}`;
         alert('This file is not a valid Tutor Talks .tutor session package.');
       }
     });
+
+    const joinCode = new URLSearchParams(window.location.search).get('class');
+    if (joinCode) {
+      document.getElementById('landing-class-code').value = normalizedAccessCode(joinCode);
+      document.getElementById('landing-first-name').focus();
+    }
 
   </script>
 </body>

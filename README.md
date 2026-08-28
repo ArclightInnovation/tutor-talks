@@ -1,15 +1,19 @@
-# 🎓 Tutor Talks — AI Tutoring Web Platform for University Faculty & Students
+# Tutor Talks — AI Tutoring Web Platform for University Faculty & Students
 
 **Tutor Talks** is a mobile-first, production-ready AI tutoring platform designed for university professors and students. Faculty members can configure specialized AI tutors for their courses, upload sectioned course modules, synthesize AI lesson plans, establish custom guardrails, and generate unique student access codes. Students log in using their class code and interact with customized AI tutoring modes, including Socratic questioning, practice quizzes, and step-by-step guidance.
 
 ---
 
-## 🌟 Key Features
+## Key Features
 
-### 🎓 **Instructor Portal**
+### **Instructor Portal**
 * **Course & Class Management:** Create and manage university courses with unique class access codes (e.g. `NYU-CS101`).
+* **Custom Access & Join Links:** Edit unique class codes and copy a prefilled student join link with one click.
 * **Sectioned Course Modules:** Upload syllabus materials, readings, and lecture notes organized by module.
+* **Syllabus Module Generator:** Convert a complete syllabus or course outline into an ordered module set.
 * **AI Lesson Plan & RAG Synthesizer:** Auto-generate structured learning objectives, core concepts, teaching strategies, and misconception checks embedded directly into module context.
+* **Live Tutor Test Sandbox:** Test prompts, course context, and saved guardrails without affecting student records.
+* **Roster & Analytics Dashboard:** Inspect multiple student `.tutor` packages for class-wide mastery and common gaps.
 * **Scaffolding & Help Level Controls:**
   * **Minimal Hints (Socratic Questions Only):** Guides students with subtle nudges.
   * **Balanced Guidance:** Offers structured feedback and partial steps.
@@ -19,7 +23,7 @@
   * Enforce academic honor code rules.
   * Restrict discussion strictly to course domain topics.
 
-### 👨‍🎓 **Student Portal**
+### **Student Portal**
 * **Class Code Login:** Login using student first name, last initial, and class access code.
 * **Module Selection:** Choose specific course modules to study.
 * **Interactive AI Chat:** Real-time conversation powered by **Gemini 3.1 Pro** with automatic model fallbacks.
@@ -30,10 +34,10 @@
 
 ---
 
-## 🔒 Security
+## Security
 Faculty authentication uses client-side SHA-256 verification, while students authenticate with class access codes. Authentication secrets are not documented or stored in plaintext.
 
 ---
 
-## 🌐 Live Deployment
+## Live Deployment
 * **Live Web App:** [https://arclightinnovation.github.io/tutor-talks/](https://arclightinnovation.github.io/tutor-talks/)

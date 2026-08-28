@@ -7,6 +7,10 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.8.0/mammoth.browser.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-storage-compat.js"></script>
   <style>
     :root {
       --bg-main: #f5f7fa;
@@ -164,6 +168,8 @@
     .document-name { font-size: .84rem; font-weight: 700; overflow-wrap: anywhere; }
     .document-meta { color: var(--text-muted); font-size: .74rem; }
     .document-options { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+    .account-control { display: flex; gap: 8px; align-items: center; }
+    .account-identity { max-width: 240px; color: var(--text-muted); font-size: .78rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .check-label { display: inline-flex; gap: 6px; align-items: center; font-size: .78rem; font-weight: 650; cursor: pointer; }
     .check-label input { width: auto; min-height: 0; }
     @media (max-width: 680px) {
@@ -177,6 +183,7 @@
       .course-item-actions { justify-content: flex-start; }
       .course-editor-grid, .editor-destinations { grid-template-columns: 1fr; }
       .document-row { grid-template-columns: 1fr; }
+      .account-identity { display: none; }
     }
   </style>
 </head>
@@ -204,6 +211,8 @@
       <symbol id="i-close" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></symbol>
       <symbol id="i-file" viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6V3Z"/><path d="M14 3v5h5M9 12h6M9 16h6"/></symbol>
       <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3m3 0-1 14H7L6 7M10 11v6M14 11v6"/></symbol>
+      <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></symbol>
+      <symbol id="i-signout" viewBox="0 0 24 24"><path d="M10 4H5v16h5M14 8l4 4-4 4M18 12H9"/></symbol>
     </defs>
   </svg>
 
@@ -212,6 +221,7 @@
     <div class="brand"><span class="brand-mark"><svg class="icon"><use href="#i-academic"/></svg></span><span>Tutor Talks</span></div>
     <div style="display: flex; gap: 8px; align-items: center;">
       <span class="badge badge-primary" id="role-badge">STUDENT MODE</span>
+      <div class="account-control"><span class="account-identity" id="account-identity">Not signed in</span><button class="btn-secondary" id="btn-google-auth" type="button" style="min-height:36px;padding:6px 10px;"><svg class="icon icon-sm"><use href="#i-user"/></svg><span id="google-auth-label">Sign in with Google</span></button></div>
     </div>
   </header>
 
@@ -538,6 +548,87 @@
     let rosterPackages = [];
     let editingModuleId = null;
     let stagedModuleDocuments = [];
+    let firebaseAuth = null, firestoreDb = null, firebaseStorage = null, firebaseUser = null;
+    let firebaseReady = false, cloudCoursesLoaded = false, unsubscribeCourses = null;
+
+    // Public Firebase web identifiers can be injected by the deployment before this script.
+    // Never place service-account keys or other private credentials in browser code.
+    const firebaseConfig = Object.assign({
+      apiKey: "AIzaSyDOm74jFz9pZ0Is0wGMN5z9j47nI4X9IwA",
+      authDomain: "tutortalks-e655c.firebaseapp.com",
+      projectId: "tutortalks-e655c",
+      storageBucket: "tutortalks-e655c.firebasestorage.app",
+      messagingSenderId: "556415920714",
+      appId: "1:556415920714:web:906b5e660663ccc09914b3",
+      measurementId: "G-D7R21VZ76C"
+    }, window.TUTOR_TALKS_FIREBASE_CONFIG || {});
+
+    async function initializeFirebase() {
+      if (!window.firebase || !firebaseConfig.apiKey || !firebaseConfig.appId) {
+        document.getElementById('account-identity').textContent = 'Local mode';
+        return false;
+      }
+      try {
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+        firebaseAuth = firebase.auth(); firestoreDb = firebase.firestore(); firebaseStorage = firebase.storage(); firebaseReady = true;
+        firebaseAuth.onAuthStateChanged(async user => {
+          firebaseUser = user;
+          document.getElementById('account-identity').textContent = user ? (user.displayName || user.email || 'Google user') : 'Not signed in';
+          document.getElementById('google-auth-label').textContent = user ? 'Sign out' : 'Sign in with Google';
+          document.querySelector('#btn-google-auth use').setAttribute('href', user ? '#i-signout' : '#i-user');
+          if (user) { subscribeToCloudCourses(); if (currentCourseId) await loadCloudProgress(); }
+          else if (unsubscribeCourses) { unsubscribeCourses(); unsubscribeCourses = null; cloudCoursesLoaded = false; }
+        });
+        return true;
+      } catch (error) {
+        firebaseReady = false; document.getElementById('account-identity').textContent = 'Local mode';
+        console.warn('Firebase unavailable; using local storage.', error); return false;
+      }
+    }
+
+    async function signInWithGoogle() {
+      if (!firebaseReady) return null;
+      if (firebaseUser) return firebaseUser;
+      try { return (await firebaseAuth.signInWithPopup(new firebase.auth.GoogleAuthProvider())).user; }
+      catch (error) { if (error.code !== 'auth/popup-closed-by-user') alert('Google sign-in could not be completed. Local data remains available.'); return null; }
+    }
+
+    document.getElementById('btn-google-auth').onclick = async () => {
+      if (!firebaseReady) return alert('Firebase is not configured for this deployment. The app is running in local mode.');
+      if (firebaseUser) await firebaseAuth.signOut(); else await signInWithGoogle();
+    };
+
+    function subscribeToCloudCourses() {
+      if (!firestoreDb || !firebaseUser || unsubscribeCourses) return;
+      unsubscribeCourses = firestoreDb.collection('courses').onSnapshot(snapshot => {
+        if (snapshot.empty) {
+          if (!cloudCoursesLoaded) getCoursesData().forEach(course => persistCourseToCloud(course));
+          cloudCoursesLoaded = true; return;
+        }
+        const courses = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
+        localStorage.setItem('tutor_bot_courses', JSON.stringify(courses)); cloudCoursesLoaded = true; synchronizeCourseViews();
+      }, error => console.warn('Firestore sync unavailable; using local storage.', error));
+    }
+
+    async function persistCourseToCloud(course) {
+      if (!firestoreDb || !firebaseUser) return false;
+      try {
+        await firestoreDb.collection('courses').doc(course.id).set({ ...course, updatedAt: firebase.firestore.FieldValue.serverTimestamp(), updatedBy: firebaseUser.uid }, { merge: true });
+        const batch = firestoreDb.batch();
+        (course.modules || []).forEach(module => (module.documents || []).filter(item => item.aiKnowledgeBase).forEach(item => {
+          batch.set(firestoreDb.collection('knowledgeBaseDocuments').doc(`${course.id}_${module.id}_${item.id}`), { courseId: course.id, moduleId: module.id, name: item.name, type: item.type || '', size: item.size || 0, textContent: item.textContent || '', downloadURL: item.downloadURL || '', storagePath: item.storagePath || '', updatedBy: firebaseUser.uid, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
+        }));
+        await batch.commit(); return true;
+      } catch (error) { console.warn('Course cloud save failed; local copy retained.', error); return false; }
+    }
+
+    async function uploadDocumentToStorage(file, documentId) {
+      if (!firebaseStorage || !firebaseUser) return null;
+      const cleanName = file.name.replace(/[^a-z0-9._-]+/gi, '-');
+      const storagePath = `module-documents/${firebaseUser.uid}/${Date.now()}-${documentId}-${cleanName}`;
+      const snapshot = await firebaseStorage.ref(storagePath).put(file, { contentType: file.type || 'application/octet-stream' });
+      return { storagePath, downloadURL: await snapshot.ref.getDownloadURL() };
+    }
 
     if (window.pdfjsLib) {
       window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
@@ -636,11 +727,14 @@
         try {
           const buffer = await file.arrayBuffer();
           const textContent = await extractDocumentText(file, buffer);
-          stagedModuleDocuments.push({ id: `d_${Date.now()}_${Math.random().toString(36).slice(2,8)}`, name: file.name, type: file.type || file.name.split('.').pop().toUpperCase(), size: file.size, addedAt: new Date().toISOString(), aiKnowledgeBase: true, studentResource: false, textContent, dataUrl: await fileToDataUrl(file) });
+          const id = `d_${Date.now()}_${Math.random().toString(36).slice(2,8)}`;
+          let cloudFile = null;
+          try { cloudFile = await uploadDocumentToStorage(file, id); } catch (uploadError) { console.warn('Storage upload failed; retaining a local copy.', uploadError); }
+          stagedModuleDocuments.push({ id, name: file.name, type: file.type || file.name.split('.').pop().toUpperCase(), size: file.size, addedAt: new Date().toISOString(), aiKnowledgeBase: true, studentResource: false, textContent, ...(cloudFile || { dataUrl: await fileToDataUrl(file) }) });
         } catch (error) { failed++; }
       }
       renderModuleDocumentEditor();
-      status.textContent = `${files.length - failed} document${files.length - failed === 1 ? '' : 's'} attached${failed ? `; ${failed} could not be processed` : ''}. Save the module to commit changes.`;
+      status.textContent = `${files.length - failed} document${files.length - failed === 1 ? '' : 's'} attached${firebaseUser ? ' and uploaded to cloud storage' : ' locally'}${failed ? `; ${failed} could not be processed` : ''}. Save the module to commit changes.`;
     });
 
     const CONTEXT_WINDOW_TURNS = 8;
@@ -753,6 +847,7 @@
     function saveCoursesData(courses) {
       localStorage.setItem("tutor_bot_courses", JSON.stringify(courses));
       synchronizeCourseViews();
+      if (firebaseUser) courses.forEach(course => persistCourseToCloud(course));
     }
 
     function escapeHtml(value) {
@@ -797,7 +892,7 @@
     }
 
     // Landing Screen Handlers
-    document.getElementById('btn-enter-student').onclick = () => {
+    document.getElementById('btn-enter-student').onclick = async () => {
       const firstNameInput = document.getElementById('landing-first-name');
       const lastInitialInput = document.getElementById('landing-last-initial');
       const loginError = document.getElementById('student-login-error');
@@ -810,19 +905,25 @@
         return;
       }
 
+      const inputCode = document.getElementById('landing-class-code').value.trim().toUpperCase();
+      const courses = getCoursesData();
+      const found = courses.find(c => c.code.toUpperCase() === inputCode);
+      if (!found) {
+        loginError.textContent = 'Enter a valid class code.'; loginError.style.display = 'block';
+        document.getElementById('landing-class-code').focus(); return;
+      }
+      if (firebaseReady && !await signInWithGoogle()) return;
       loginError.style.display = 'none';
       currentStudentName = `${firstName.charAt(0).toUpperCase()}${firstName.slice(1)} ${lastInitial}.`;
       sessionStorage.setItem("tutor_bot_student_name", currentStudentName);
 
-      const inputCode = document.getElementById('landing-class-code').value.trim().toUpperCase();
-      const courses = getCoursesData();
-      const found = courses.find(c => c.code.toUpperCase() === inputCode) || courses[0];
-      
       currentCourseId = found.id;
+      await loadCloudProgress();
       openStudentPortal(found);
     };
 
-    document.getElementById('btn-enter-instructor').onclick = () => {
+    document.getElementById('btn-enter-instructor').onclick = async () => {
+      if (firebaseReady && !await signInWithGoogle()) return;
       showScreen('screen-faculty-auth');
     };
 
@@ -1713,6 +1814,11 @@ ${buildOptimizedTranscript(sessionState.transcript)}`;
       document.getElementById('landing-class-code').value = normalizedAccessCode(joinCode);
       document.getElementById('landing-first-name').focus();
     }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      initializeFirebase();
+    });
+    initializeFirebase();
 
   </script>
 </body>

@@ -269,7 +269,7 @@
         <p style="font-size: 0.88rem; color: var(--text-muted); margin: 0;">Select a course and upload sectioned modules, lecture notes, or readings.</p>
 
         <label style="font-size: 0.82rem; font-weight: 700; color: var(--text-muted);">Select Course:</label>
-        <select id="sel-instructor-course" onchange="renderInstructorModules()"></select>
+        <select id="sel-instructor-course" onchange="resetModuleEditor(); renderInstructorModules();"></select>
 
         <div style="background:var(--primary-light);border:1px solid #cbd9e7;padding:16px;border-radius:9px;display:flex;flex-direction:column;gap:10px;">
           <div style="font-weight:750;color:var(--primary);display:flex;align-items:center;gap:8px;"><svg class="icon"><use href="#i-spark"/></svg> Auto-Generate All Modules from Syllabus/Text</div>
@@ -279,13 +279,16 @@
         </div>
 
         <div style="background: #f8fafc; border: 1px solid var(--card-border); padding: 16px; border-radius: 12px; display: flex; flex-direction: column; gap: 10px;">
-          <div style="font-weight: 700; font-size: 0.95rem; color: var(--primary);">Add New Module</div>
+          <div id="module-editor-heading" style="font-weight: 700; font-size: 0.95rem; color: var(--primary);">Add New Module</div>
           <input type="text" id="new-module-title" placeholder="Module Title (e.g. Module 1: Socratic Logic & Ethics)..." />
           <input type="text" id="new-module-desc" placeholder="Brief Summary (e.g. Fundamentals of guided reasoning)..." />
           <textarea id="new-module-content" placeholder="Paste module readings, lecture content, or syllabus guidelines..."></textarea>
           <button class="btn-secondary" id="btn-generate-lesson-plan"><svg class="icon icon-sm"><use href="#i-spark"/></svg> Generate AI Lesson Plan &amp; RAG Context</button>
           <div id="lesson-plan-status" role="status" style="font-size: 0.82rem; color: var(--text-muted);"></div>
-          <button class="btn-primary" id="btn-save-module">Save Module</button>
+          <div class="compact-row">
+            <button class="btn-primary" id="btn-save-module">Save Module</button>
+            <button class="btn-secondary" id="btn-cancel-module-edit" style="display:none;">Cancel Edit</button>
+          </div>
         </div>
 
         <div id="module-list-container" style="display: flex; flex-direction: column; gap: 10px; margin-top: 8px;"></div>
@@ -464,6 +467,7 @@
     let sessionState = createSessionState();
     let sandboxTranscript = [];
     let rosterPackages = [];
+    let editingModuleId = null;
 
     function createSessionState() {
       return { version: 1, startedAt: new Date().toISOString(), transcript: [], notes: "" };
@@ -593,6 +597,20 @@
 
     function saveCoursesData(courses) {
       localStorage.setItem("tutor_bot_courses", JSON.stringify(courses));
+      synchronizeCourseViews();
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? '').replace(/[&<>'"]/g, character => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', "'":'&#39;', '"':'&quot;' })[character]);
+    }
+
+    function synchronizeCourseViews() {
+      renderInstructorCourses();
+      renderInstructorModules();
+      if (currentCourseId) {
+        const course = getCoursesData().find(item => item.id === currentCourseId);
+        if (course) refreshStudentCourse(course);
+      }
     }
 
     // Cryptographic Helpers
@@ -697,6 +715,9 @@
       const selModule = document.getElementById('sel-instructor-course');
       const selGuardrail = document.getElementById('sel-guardrail-course');
       const selSandbox = document.getElementById('sel-sandbox-course');
+      const selectedModuleCourse = selModule.value;
+      const selectedGuardrailCourse = selGuardrail.value;
+      const selectedSandboxCourse = selSandbox.value;
 
       container.innerHTML = "";
       selModule.innerHTML = "";
@@ -707,10 +728,16 @@
         container.innerHTML += `
           <div class="card" style="padding: 14px; background: #f8fafc; flex-direction: row; justify-content: space-between; align-items: center;">
             <div>
-              <div style="font-weight: 800; color: var(--text-main);">${c.title}</div>
+              <div id="course-title-display-${c.id}" style="font-weight: 800; color: var(--text-main);">${escapeHtml(c.title)}</div>
+              <div id="course-title-editor-${c.id}" class="compact-row" style="display:none;margin-bottom:6px;">
+                <input id="course-title-input-${c.id}" value="${escapeHtml(c.title)}" aria-label="New title for ${escapeHtml(c.title)}" style="min-width:260px;" />
+                <button class="btn-primary" onclick="saveCourseTitle('${c.id}')">Save Title</button>
+                <button class="btn-secondary" onclick="toggleCourseTitleEditor('${c.id}', false)">Cancel</button>
+              </div>
               <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">${c.modules.length} Modules</div>
               <div class="compact-row" style="margin-top:8px;">
-                <input id="course-code-${c.id}" value="${c.code}" aria-label="Access code for ${c.title}" style="width:180px;text-transform:uppercase;" maxlength="24" />
+                <button class="btn-secondary" onclick="toggleCourseTitleEditor('${c.id}', true)">Edit Title</button>
+                <input id="course-code-${c.id}" value="${escapeHtml(c.code)}" aria-label="Access code for ${escapeHtml(c.title)}" style="width:180px;text-transform:uppercase;" maxlength="24" />
                 <button class="btn-secondary" onclick="saveAccessCode('${c.id}')">Save Code</button>
                 <button class="btn-secondary" onclick="copyJoinLink('${c.id}', this)"><svg class="icon icon-sm"><use href="#i-copy"/></svg> Copy Student Join Link</button>
               </div>
@@ -719,11 +746,34 @@
           </div>
         `;
 
-        selModule.innerHTML += `<option value="${c.id}">${c.title} (${c.code})</option>`;
-        selGuardrail.innerHTML += `<option value="${c.id}">${c.title} (${c.code})</option>`;
-        selSandbox.innerHTML += `<option value="${c.id}">${c.title} (${c.code})</option>`;
+        const option = `<option value="${c.id}">${escapeHtml(c.title)} (${escapeHtml(c.code)})</option>`;
+        selModule.innerHTML += option;
+        selGuardrail.innerHTML += option;
+        selSandbox.innerHTML += option;
       });
+      if (courses.some(c => c.id === selectedModuleCourse)) selModule.value = selectedModuleCourse;
+      if (courses.some(c => c.id === selectedGuardrailCourse)) selGuardrail.value = selectedGuardrailCourse;
+      if (courses.some(c => c.id === selectedSandboxCourse)) selSandbox.value = selectedSandboxCourse;
       loadSandboxModules();
+    }
+
+    function toggleCourseTitleEditor(courseId, show) {
+      const display = document.getElementById(`course-title-display-${courseId}`);
+      const editor = document.getElementById(`course-title-editor-${courseId}`);
+      const input = document.getElementById(`course-title-input-${courseId}`);
+      display.style.display = show ? 'none' : 'block';
+      editor.style.display = show ? 'flex' : 'none';
+      if (show) { input.focus(); input.select(); }
+    }
+
+    function saveCourseTitle(courseId) {
+      const title = document.getElementById(`course-title-input-${courseId}`).value.trim();
+      if (!title) return alert('Course title cannot be empty.');
+      const courses = getCoursesData();
+      const course = courses.find(item => item.id === courseId);
+      if (!course) return;
+      course.title = title;
+      saveCoursesData(courses);
     }
 
     function normalizedAccessCode(value) {
@@ -807,13 +857,55 @@
       found.modules.forEach((m, idx) => {
         container.innerHTML += `
           <div class="card" style="padding: 14px; background: #ffffff;">
-            <div style="font-weight: 800; color: var(--primary);">${m.title}</div>
-            <div style="font-size: 0.82rem; color: var(--text-muted); margin: 2px 0;">${m.desc}</div>
-            <div style="font-size: 0.78rem; color: var(--text-main); background: #f8fafc; padding: 8px; border-radius: 6px; margin-top: 4px;">${m.content.substring(0, 120)}...</div>
+            <div style="font-weight: 800; color: var(--primary);">${escapeHtml(m.title)}</div>
+            <div style="font-size: 0.82rem; color: var(--text-muted); margin: 2px 0;">${escapeHtml(m.desc)}</div>
+            <div style="font-size: 0.78rem; color: var(--text-main); background: #f8fafc; padding: 8px; border-radius: 6px; margin-top: 4px;">${escapeHtml(m.content.substring(0, 120))}${m.content.length > 120 ? '…' : ''}</div>
+            <div class="compact-row">
+              <button class="btn-secondary" onclick="editModule('${found.id}', '${m.id}')">Edit</button>
+              <button class="btn-secondary" onclick="deleteModule('${found.id}', '${m.id}')" style="color:var(--accent-red);">Delete</button>
+            </div>
           </div>
         `;
       });
     }
+
+    function resetModuleEditor() {
+      editingModuleId = null;
+      document.getElementById('new-module-title').value = '';
+      document.getElementById('new-module-desc').value = '';
+      document.getElementById('new-module-content').value = '';
+      document.getElementById('module-editor-heading').textContent = 'Add New Module';
+      document.getElementById('btn-save-module').textContent = 'Save Module';
+      document.getElementById('btn-cancel-module-edit').style.display = 'none';
+      document.getElementById('lesson-plan-status').textContent = '';
+    }
+
+    function editModule(courseId, moduleId) {
+      const course = getCoursesData().find(item => item.id === courseId);
+      const module = course?.modules.find(item => item.id === moduleId);
+      if (!module) return;
+      document.getElementById('sel-instructor-course').value = courseId;
+      editingModuleId = moduleId;
+      document.getElementById('new-module-title').value = module.title;
+      document.getElementById('new-module-desc').value = module.desc || '';
+      document.getElementById('new-module-content').value = module.content;
+      document.getElementById('module-editor-heading').textContent = `Edit Module: ${module.title}`;
+      document.getElementById('btn-save-module').textContent = 'Update Module';
+      document.getElementById('btn-cancel-module-edit').style.display = 'inline-flex';
+      document.getElementById('new-module-title').focus();
+    }
+
+    function deleteModule(courseId, moduleId) {
+      const courses = getCoursesData();
+      const course = courses.find(item => item.id === courseId);
+      const module = course?.modules.find(item => item.id === moduleId);
+      if (!module || !confirm(`Delete "${module.title}"? This cannot be undone.`)) return;
+      course.modules = course.modules.filter(item => item.id !== moduleId);
+      if (editingModuleId === moduleId) resetModuleEditor();
+      saveCoursesData(courses);
+    }
+
+    document.getElementById('btn-cancel-module-edit').onclick = resetModuleEditor;
 
     document.getElementById('btn-generate-lesson-plan').onclick = async () => {
       const button = document.getElementById('btn-generate-lesson-plan');
@@ -844,18 +936,13 @@
 
       const course = courses.find(c => c.id === selectedId);
       if (course) {
-        course.modules.push({
-          id: `m_${Date.now()}`,
-          title: title,
-          desc: desc,
-          content: content
-        });
+        const existing = editingModuleId && course.modules.find(module => module.id === editingModuleId);
+        if (existing) Object.assign(existing, { title, desc, content });
+        else course.modules.push({ id: `m_${Date.now()}`, title, desc, content });
+        const wasEditing = Boolean(existing);
         saveCoursesData(courses);
-        document.getElementById('new-module-title').value = "";
-        document.getElementById('new-module-desc').value = "";
-        document.getElementById('new-module-content').value = "";
-        renderInstructorModules();
-        alert("Course Module saved successfully!");
+        resetModuleEditor();
+        alert(wasEditing ? "Course module updated successfully!" : "Course module saved successfully!");
       }
     };
 
@@ -1034,6 +1121,20 @@
       persistProgressReports(getStudentProgress());
     }
 
+    function refreshStudentCourse(course) {
+      const moduleSelect = document.getElementById('sel-student-module');
+      if (!moduleSelect) return;
+      const selectedModuleId = moduleSelect.value;
+      activeCourseSnapshot = course;
+      document.getElementById('student-class-code-badge').innerText = `CLASS CODE: ${course.code}`;
+      document.getElementById('student-course-title').innerText = course.title;
+      moduleSelect.innerHTML = course.modules?.length
+        ? course.modules.map(module => `<option value="${module.id}">${escapeHtml(module.title)}</option>`).join('')
+        : '<option value="">General Course Tutoring</option>';
+      if (course.modules?.some(module => module.id === selectedModuleId)) moduleSelect.value = selectedModuleId;
+      switchStudentModule();
+    }
+
     function switchStudentModule() {
       const courses = getCoursesData();
       const course = activeCourseSnapshot || courses.find(c => c.id === currentCourseId) || courses[0];
@@ -1042,6 +1143,11 @@
 
       document.getElementById('chat-module-header').innerText = mod.title;
     }
+
+    window.addEventListener('storage', event => {
+      if (event.key !== 'tutor_bot_courses') return;
+      synchronizeCourseViews();
+    });
 
     function progressStorageKey(courseId = currentCourseId) {
       return `tutor_progress_${safeFilename(currentStudentName)}_${courseId || 'general'}`;

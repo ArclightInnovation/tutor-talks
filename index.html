@@ -1,0 +1,1168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Tutor Talks — AI Tutoring Platform for Faculty & Students</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <style>
+    :root {
+      --bg-main: #f5f7fa;
+      --card-bg: #ffffff;
+      --card-border: #e2e8f0;
+      --primary: #173f6b;
+      --primary-hover: #0f3157;
+      --primary-light: #eaf1f8;
+      --accent-green: #10b981;
+      --accent-amber: #f59e0b;
+      --accent-purple: #8b5cf6;
+      --accent-red: #ef4444;
+      --text-main: #172033;
+      --text-muted: #5f6f82;
+      --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.04);
+      --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.06), 0 2px 4px -1px rgba(0,0,0,0.03);
+      --shadow-lg: 0 10px 25px -3px rgba(0,0,0,0.08), 0 4px 6px -2px rgba(0,0,0,0.03);
+    }
+
+    * { box-sizing: border-box; }
+    body, html {
+      margin: 0; padding: 0; width: 100%; height: 100%;
+      background-color: var(--bg-main); color: var(--text-main);
+      font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: 16px; line-height: 1.55; letter-spacing: -0.005em;
+      overflow-x: hidden;
+    }
+
+    /* Top Bar */
+    header {
+      background: #ffffff; border-bottom: 1px solid var(--card-border);
+      padding: 0 28px; display: flex; justify-content: space-between;
+      align-items: center; min-height: 64px;
+      position: sticky; top: 0; z-index: 1000;
+    }
+    .brand { font-size: 1.05rem; font-weight: 750; color: var(--text-main); display: flex; align-items: center; gap: 10px; letter-spacing: -0.02em; }
+    .brand-mark { width: 34px; height: 34px; display: grid; place-items: center; color: white; background: var(--primary); border-radius: 8px; }
+    .icon { width: 18px; height: 18px; flex: 0 0 auto; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+    .icon-sm { width: 15px; height: 15px; }
+    .icon-lg { width: 28px; height: 28px; }
+    .section-icon { width: 44px; height: 44px; display: grid; place-items: center; color: var(--primary); background: var(--primary-light); border: 1px solid #d5e2ef; border-radius: 10px; }
+    
+    /* Layout Container */
+    main {
+      max-width: 1040px; margin: 0 auto; padding: 32px 24px 56px;
+      display: flex; flex-direction: column; gap: 24px;
+    }
+
+    /* Cards */
+    .card {
+      background: var(--card-bg); border: 1px solid var(--card-border);
+      border-radius: 10px; padding: 24px; box-shadow: var(--shadow-sm);
+      display: flex; flex-direction: column; gap: 16px;
+    }
+    .card-title { font-size: 1.08rem; font-weight: 700; color: var(--text-main); letter-spacing: -0.015em; display: flex; align-items: center; gap: 9px; }
+
+    /* Buttons & Inputs */
+    button.btn-primary {
+      background: var(--primary); color: #ffffff; font-weight: 650;
+      border: 1px solid var(--primary); border-radius: 7px; padding: 10px 17px; font-size: 0.9rem;
+      min-height: 42px; cursor: pointer; display: inline-flex; align-items: center;
+      justify-content: center; gap: 8px; transition: background 0.15s ease, box-shadow .15s ease, transform .15s ease;
+    }
+    button.btn-primary:hover { background: var(--primary-hover); box-shadow: 0 3px 8px rgba(23,63,107,.16); }
+    button.btn-secondary {
+      background: #f1f5f9; color: var(--text-main); border: 1px solid var(--card-border);
+      border-radius: 7px; padding: 9px 14px; font-size: 0.86rem; font-weight: 600;
+      min-height: 42px; cursor: pointer; display: inline-flex; align-items: center;
+      justify-content: center; gap: 7px;
+    }
+    button.btn-secondary:hover { background: #e2e8f0; }
+
+    input, select, textarea {
+      width: 100%; padding: 12px 14px; background: #ffffff;
+      border: 1px solid var(--card-border); color: var(--text-main);
+      border-radius: 7px; font-size: 14px; outline: none; min-height: 42px;
+    }
+    input:focus, select:focus, textarea:focus {
+      border-color: var(--primary); box-shadow: 0 0 0 3px rgba(23, 63, 107, 0.1);
+    }
+    textarea { min-height: 100px; resize: vertical; }
+
+    /* Badges */
+    .badge {
+      padding: 4px 9px; border-radius: 5px; font-size: 0.68rem; font-weight: 750; letter-spacing: .055em;
+      display: inline-flex; align-items: center; gap: 4px;
+    }
+    .badge-primary { background: var(--primary-light); color: var(--primary); }
+    .badge-success { background: #d1fae5; color: #065f46; }
+    .badge-amber { background: #fef3c7; color: #92400e; }
+
+    /* Chat Messages */
+    .chat-box {
+      width: 100%; height: 400px; background: #f7f9fc; border: 1px solid var(--card-border);
+      border-radius: 9px; padding: 20px; overflow-y: auto; display: flex;
+      flex-direction: column; gap: 12px;
+    }
+    .chat-bubble {
+      max-width: 78%; padding: 12px 15px; border-radius: 9px; font-size: 0.9rem;
+      line-height: 1.5; word-wrap: break-word;
+    }
+    .chat-bubble.student {
+      align-self: flex-end; background: var(--primary); color: #ffffff;
+      border-bottom-right-radius: 3px;
+    }
+    .chat-bubble.tutor {
+      align-self: flex-start; background: #ffffff; border: 1px solid var(--card-border);
+      color: var(--text-main); border-bottom-left-radius: 3px; box-shadow: var(--shadow-sm);
+    }
+    .audio-play-btn {
+      background: var(--primary-light); color: var(--primary); border: none;
+      border-radius: 6px; width: 30px; height: 30px; font-size: 0.75rem;
+      display: inline-flex; align-items: center; justify-content: center;
+      cursor: pointer; margin-left: 8px; vertical-align: middle;
+    }
+
+    /* Navigation Tabs */
+    .tab-bar { display: flex; gap: 4px; border-bottom: 1px solid var(--card-border); padding: 0; overflow-x: auto; }
+    .tab-btn {
+      background: transparent; border: none; border-bottom: 2px solid transparent; padding: 11px 14px; font-weight: 600;
+      font-size: 0.86rem; color: var(--text-muted); cursor: pointer; display: inline-flex; align-items: center; gap: 7px; white-space: nowrap;
+    }
+    .tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); }
+
+    /* Screen Views */
+    .portal-screen { display: none; flex-direction: column; gap: 20px; }
+    .portal-screen.active { display: flex; }
+    .notes-pad { min-height: 150px; line-height: 1.55; background: #fffef7; border-color: #fde68a; }
+    .session-end { border: 1px solid #cbd9e7; background: linear-gradient(135deg, #f8fbfe, #edf3f8); text-align: center; }
+    .session-end p { margin: 0; color: var(--text-muted); font-size: 0.88rem; }
+    .progress-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+    .metric { background: #f8fafc; border: 1px solid var(--card-border); border-radius: 8px; padding: 18px; text-align: center; }
+    .metric-value { color: var(--primary); font-size: 1.6rem; font-weight: 800; }
+    .markdown-preview { white-space: pre-wrap; background: #0f172a; color: #e2e8f0; border-radius: 12px; padding: 16px; max-height: 300px; overflow: auto; font: 0.8rem/1.5 ui-monospace, monospace; }
+    @media (max-width: 680px) {
+      .student-grid, .landing-grid { grid-template-columns: 1fr !important; }
+      header { padding: 0 16px; }
+      main { padding: 20px 14px 40px; }
+      .card { padding: 18px; }
+      .progress-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <svg aria-hidden="true" style="position:absolute;width:0;height:0;overflow:hidden">
+    <defs>
+      <symbol id="i-academic" viewBox="0 0 24 24"><path d="m3 10 9-5 9 5-9 5-9-5Z"/><path d="M7 12.5V17c3 2.2 7 2.2 10 0v-4.5M21 10v6"/></symbol>
+      <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3M12 14v3"/></symbol>
+      <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 16V4m0 0L8 8m4-4 4 4M5 14v5h14v-5"/></symbol>
+      <symbol id="i-book" viewBox="0 0 24 24"><path d="M4 5.5A3.5 3.5 0 0 1 7.5 2H11v17H7.5A3.5 3.5 0 0 0 4 22V5.5ZM20 5.5A3.5 3.5 0 0 0 16.5 2H13v17h3.5A3.5 3.5 0 0 1 20 22V5.5Z"/></symbol>
+      <symbol id="i-layers" viewBox="0 0 24 24"><path d="m12 3 9 5-9 5-9-5 9-5Z"/><path d="m3 12 9 5 9-5M3 16l9 5 9-5"/></symbol>
+      <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3 20 6v5c0 5.2-3.4 8.5-8 10-4.6-1.5-8-4.8-8-10V6l8-3Z"/><path d="m9 12 2 2 4-5"/></symbol>
+      <symbol id="i-chat" viewBox="0 0 24 24"><path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4v8Z"/></symbol>
+      <symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 20V10h4v10H4Zm6 0V4h4v16h-4Zm6 0v-7h4v7h-4Z"/></symbol>
+      <symbol id="i-note" viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6V3Z"/><path d="M14 3v5h5M9 12h6M9 16h6"/></symbol>
+      <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 3v12m0 0 4-4m-4 4-4-4M4 20h16"/></symbol>
+      <symbol id="i-send" viewBox="0 0 24 24"><path d="m3 4 18 8-18 8 3-8-3-8Z"/><path d="M6 12h15"/></symbol>
+      <symbol id="i-volume" viewBox="0 0 24 24"><path d="M5 10v4h4l5 4V6l-5 4H5ZM17 9a4 4 0 0 1 0 6M19 6a8 8 0 0 1 0 12"/></symbol>
+      <symbol id="i-spark" viewBox="0 0 24 24"><path d="m12 3 1.4 4.6L18 9l-4.6 1.4L12 15l-1.4-4.6L6 9l4.6-1.4L12 3ZM19 15l.7 2.3L22 18l-2.3.7L19 21l-.7-2.3L16 18l2.3-.7L19 15Z"/></symbol>
+    </defs>
+  </svg>
+
+  <!-- Top Navigation Header -->
+  <header>
+    <div class="brand"><span class="brand-mark"><svg class="icon"><use href="#i-academic"/></svg></span><span>Tutor Talks</span></div>
+    <div style="display: flex; gap: 8px; align-items: center;">
+      <span class="badge badge-primary" id="role-badge">STUDENT MODE</span>
+    </div>
+  </header>
+
+  <main>
+    <!-- 1. LANDING & ACCESS SELECTION -->
+    <div id="screen-landing" class="portal-screen active">
+      <div class="card" style="text-align: center; padding: 40px 24px;">
+        <div class="section-icon" style="margin: 0 auto 10px;"><svg class="icon icon-lg"><use href="#i-academic"/></svg></div>
+        <div style="font-size: 1.6rem; font-weight: 750; color: var(--text-main); letter-spacing:-.025em;">Welcome to Tutor Talks</div>
+        <p style="color: var(--text-muted); max-width: 500px; margin: 8px auto 24px auto; font-size: 0.95rem;">
+          An AI tutoring web platform designed for university faculty and students. Join your course with a class code or access the instructor workspace.
+        </p>
+
+        <div class="landing-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; max-width: 600px; margin: 0 auto; width: 100%;">
+          <!-- Student Portal Card -->
+          <div class="card" style="background: #ffffff; border-color: var(--primary); text-align: left; padding: 20px;">
+            <div class="section-icon"><svg class="icon"><use href="#i-academic"/></svg></div>
+            <div style="font-weight: 800; font-size: 1.1rem; margin-top: 4px;">Student Portal</div>
+            <p style="font-size: 0.82rem; color: var(--text-muted); margin: 4px 0 12px 0;">Enter your instructor's class code to access your course modules and tutor.</p>
+            <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 8px;">
+              <input type="text" id="landing-first-name" placeholder="First Name" aria-label="First Name" required autocomplete="given-name" />
+              <input type="text" id="landing-last-initial" placeholder="Last Initial" aria-label="Last Initial" required maxlength="1" autocomplete="family-name" />
+            </div>
+            <input type="text" id="landing-class-code" placeholder="Enter Class Code (e.g. NYU-CS101)..." style="margin-bottom: 10px;" autocomplete="off" />
+            <div id="student-login-error" role="alert" style="color: var(--accent-red); font-size: 0.82rem; font-weight: 700; display: none;">Please enter your first name and last initial.</div>
+            <button class="btn-primary" id="btn-enter-student" style="width: 100%;">Enter Course</button>
+            <button class="btn-secondary" id="btn-upload-tutor" style="width: 100%; margin-top: 8px;"><svg class="icon icon-sm"><use href="#i-upload"/></svg> Upload .tutor File</button>
+            <input type="file" id="tutor-file-input" accept=".tutor,application/json" hidden />
+          </div>
+
+          <!-- Instructor Portal Card -->
+          <div class="card" style="background: linear-gradient(135deg, #102f50 0%, #1d527f 100%); color: #ffffff; text-align: left; padding: 20px;">
+            <div class="section-icon" style="background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.25);color:#fff"><svg class="icon"><use href="#i-academic"/></svg></div>
+            <div style="font-weight: 800; font-size: 1.1rem; margin-top: 4px;">Faculty Workspace</div>
+            <p style="font-size: 0.82rem; opacity: 0.85; margin: 4px 0 12px 0;">Manage courses, upload sectioned modules, set help scaffolding, and configure AI guardrails.</p>
+            <button class="btn-primary" id="btn-enter-instructor" style="width: 100%; background: #ffffff; color: var(--primary);"><svg class="icon icon-sm"><use href="#i-lock"/></svg> Faculty Login</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. INSTRUCTOR AUTHENTICATION MODAL -->
+    <div id="screen-faculty-auth" class="portal-screen">
+      <div class="card" style="max-width: 440px; margin: 40px auto; text-align: center; width: 100%;">
+        <div class="section-icon" style="margin:0 auto"><svg class="icon"><use href="#i-lock"/></svg></div>
+        <div class="card-title">Faculty Security Gate</div>
+        <p style="font-size: 0.88rem; color: var(--text-muted); margin: 4px 0 16px 0;">Enter your instructor passcode to unlock the faculty workspace:</p>
+        <input type="password" id="faculty-passcode" placeholder="Enter security passcode..." autocomplete="off" />
+        <div id="faculty-auth-error" style="color: var(--accent-red); font-size: 0.82rem; font-weight: 700; display: none;">Invalid security passcode.</div>
+        <button class="btn-primary" id="btn-unlock-faculty">Unlock Instructor Portal</button>
+        <button class="btn-secondary" onclick="showScreen('screen-landing')">Back to Portals</button>
+      </div>
+    </div>
+
+    <!-- 3. INSTRUCTOR WORKSPACE PORTAL -->
+    <div id="screen-instructor" class="portal-screen">
+      <div class="tab-bar">
+        <button class="tab-btn active" onclick="switchInstructorTab('tab-classes')"><svg class="icon icon-sm"><use href="#i-book"/></svg> Courses &amp; Class Codes</button>
+        <button class="tab-btn" onclick="switchInstructorTab('tab-modules')"><svg class="icon icon-sm"><use href="#i-layers"/></svg> Sectioned Modules</button>
+        <button class="tab-btn" onclick="switchInstructorTab('tab-guardrails')"><svg class="icon icon-sm"><use href="#i-shield"/></svg> AI Scaffolding &amp; Guardrails</button>
+      </div>
+
+      <!-- Tab A: Courses & Class Codes -->
+      <div id="tab-classes" class="card">
+        <div class="card-title"><svg class="icon"><use href="#i-book"/></svg> Course Management &amp; Access Codes</div>
+        <p style="font-size: 0.88rem; color: var(--text-muted); margin: 0;">Create new courses. Each course generates a unique Class Code for student login.</p>
+
+        <div style="display: flex; gap: 10px; margin-top: 8px;">
+          <input type="text" id="new-course-title" placeholder="New Course Title (e.g. NYU CS101 - Intro to AI)..." />
+          <button class="btn-primary" id="btn-create-course" style="white-space: nowrap;">Create Course</button>
+        </div>
+
+        <div id="course-list-container" style="display: flex; flex-direction: column; gap: 10px; margin-top: 12px;">
+          <!-- Course Items Rendered Live -->
+        </div>
+      </div>
+
+      <!-- Tab B: Sectioned Modules -->
+      <div id="tab-modules" class="card" style="display: none;">
+        <div class="card-title"><svg class="icon"><use href="#i-layers"/></svg> Sectioned Course Modules</div>
+        <p style="font-size: 0.88rem; color: var(--text-muted); margin: 0;">Select a course and upload sectioned modules, lecture notes, or readings.</p>
+
+        <label style="font-size: 0.82rem; font-weight: 700; color: var(--text-muted);">Select Course:</label>
+        <select id="sel-instructor-course" onchange="renderInstructorModules()"></select>
+
+        <div style="background: #f8fafc; border: 1px solid var(--card-border); padding: 16px; border-radius: 12px; display: flex; flex-direction: column; gap: 10px;">
+          <div style="font-weight: 700; font-size: 0.95rem; color: var(--primary);">Add New Module</div>
+          <input type="text" id="new-module-title" placeholder="Module Title (e.g. Module 1: Socratic Logic & Ethics)..." />
+          <input type="text" id="new-module-desc" placeholder="Brief Summary (e.g. Fundamentals of guided reasoning)..." />
+          <textarea id="new-module-content" placeholder="Paste module readings, lecture content, or syllabus guidelines..."></textarea>
+          <button class="btn-secondary" id="btn-generate-lesson-plan"><svg class="icon icon-sm"><use href="#i-spark"/></svg> Generate AI Lesson Plan &amp; RAG Context</button>
+          <div id="lesson-plan-status" role="status" style="font-size: 0.82rem; color: var(--text-muted);"></div>
+          <button class="btn-primary" id="btn-save-module">Save Module</button>
+        </div>
+
+        <div id="module-list-container" style="display: flex; flex-direction: column; gap: 10px; margin-top: 8px;"></div>
+      </div>
+
+      <!-- Tab C: AI Scaffolding & Guardrails -->
+      <div id="tab-guardrails" class="card" style="display: none;">
+        <div class="card-title"><svg class="icon"><use href="#i-shield"/></svg> AI Scaffolding &amp; Safety Guardrails</div>
+        <p style="font-size: 0.88rem; color: var(--text-muted); margin: 0;">Configure how much assistance the AI Tutor provides and establish enforcement rules.</p>
+
+        <label style="font-size: 0.82rem; font-weight: 700; color: var(--text-muted);">Select Course to Configure:</label>
+        <select id="sel-guardrail-course" onchange="loadCourseGuardrailSettings()"></select>
+
+        <label style="font-size: 0.82rem; font-weight: 700; color: var(--text-muted);">Tutoring Help Level / Scaffolding:</label>
+        <select id="sel-help-level">
+          <option value="socratic">Minimal Hints — Socratic Questions Only</option>
+          <option value="balanced" selected>Balanced Guidance — Nudges &amp; Partial Explanations</option>
+          <option value="step-by-step">Full Step-by-Step Walkthroughs</option>
+        </select>
+
+        <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 8px;">
+          <label style="display: flex; align-items: center; gap: 10px; font-size: 0.9rem; font-weight: 600; cursor: pointer;">
+            <input type="checkbox" id="chk-block-answers" checked style="width: auto;" />
+            Block direct answer dumps (requires student reasoning)
+          </label>
+          <label style="display: flex; align-items: center; gap: 10px; font-size: 0.9rem; font-weight: 600; cursor: pointer;">
+            <input type="checkbox" id="chk-honor-code" checked style="width: auto;" />
+            Enforce academic honor code (refuse exam or essay ghostwriting)
+          </label>
+          <label style="display: flex; align-items: center; gap: 10px; font-size: 0.9rem; font-weight: 600; cursor: pointer;">
+            <input type="checkbox" id="chk-domain-bound" checked style="width: auto;" />
+            Restrict to course-domain topics (redirect off-topic queries)
+          </label>
+        </div>
+
+        <label style="font-size: 0.82rem; font-weight: 700; color: var(--text-muted); margin-top: 8px;">Custom Instructor Rules & System Directives:</label>
+        <textarea id="txt-custom-guardrails" placeholder="e.g. Always remind students to cite peer-reviewed literature in APA format..."></textarea>
+
+        <button class="btn-primary" id="btn-save-guardrails">Save Guardrail Settings</button>
+      </div>
+    </div>
+
+    <!-- 4. STUDENT TUTORING PORTAL -->
+    <div id="screen-student" class="portal-screen">
+      <div class="tab-bar">
+        <button class="tab-btn active" id="student-tab-tutor" onclick="switchStudentTab('tutor')"><svg class="icon icon-sm"><use href="#i-chat"/></svg> AI Tutor</button>
+        <button class="tab-btn" id="student-tab-progress" onclick="switchStudentTab('progress')"><svg class="icon icon-sm"><use href="#i-chart"/></svg> My Progress</button>
+      </div>
+      <!-- Course Banner -->
+      <div class="card student-tutor-panel" style="background: linear-gradient(135deg, #f3f7fb 0%, #e8f0f7 100%); border-color: #cbd9e7;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <span class="badge badge-primary" id="student-class-code-badge">CODE: NYU-CS101</span>
+            <div style="font-size: 1.25rem; font-weight: 800; margin-top: 4px;" id="student-course-title">NYU CS101 — Intro to Artificial Intelligence</div>
+          </div>
+          <button class="btn-secondary" onclick="showScreen('screen-landing')" style="min-height: 36px; font-size: 0.8rem;">Change Class</button>
+        </div>
+      </div>
+
+      <!-- Module & Mode Selector Card -->
+      <div class="card student-tutor-panel">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div>
+            <label style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted);">Select Study Module:</label>
+            <select id="sel-student-module" onchange="switchStudentModule()"></select>
+          </div>
+          <div>
+            <label style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted);">Tutoring Mode:</label>
+            <select id="sel-tutoring-mode" onchange="switchStudentModule()">
+              <option value="Socratic Tutor">Socratic Tutor — Questions &amp; Guidance</option>
+              <option value="Practice Quizmaster">Practice Quizmaster — Interactive Drill</option>
+              <option value="Friendly Mentor">Friendly Mentor — Conversational Nudges</option>
+              <option value="Direct Instructor">Direct Instructor — Academic Style</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Chat Interface Card -->
+      <div class="card student-tutor-panel">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <div class="card-title" id="chat-module-header">Module 1: Introduction & Socratic Logic</div>
+          <button class="btn-secondary" id="btn-clear-chat" style="min-height: 32px; padding: 2px 8px; font-size: 0.78rem;">Clear Chat</button>
+        </div>
+
+        <div class="chat-box" id="chat-messages">
+          <div class="chat-bubble tutor">
+            <strong>Tutor Talks:</strong> Welcome! I am your AI tutor configured for this course. Select a module above and ask any question to begin our tutoring session!
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 8px;">
+          <input type="text" id="student-chat-input" placeholder="Type your question or response here..." autocomplete="off" />
+          <button class="btn-primary" id="btn-send-chat" style="min-width: 90px; width: auto;"><svg class="icon icon-sm"><use href="#i-send"/></svg> Send</button>
+        </div>
+      </div>
+
+      <div class="card student-tutor-panel">
+        <div class="student-grid" style="display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: center;">
+          <div>
+            <div class="card-title"><svg class="icon"><use href="#i-note"/></svg> Student Notes</div>
+            <div style="font-size: 0.82rem; color: var(--text-muted); margin-top: 3px;">Your notes are saved in this browser as you type and included in your session package.</div>
+          </div>
+          <button class="btn-secondary" id="btn-export-notes"><svg class="icon icon-sm"><use href="#i-download"/></svg> Export Notes as PDF</button>
+        </div>
+        <textarea id="student-notes" class="notes-pad" placeholder="Capture key ideas, questions, examples, and takeaways..."></textarea>
+      </div>
+
+      <div class="card session-end student-tutor-panel">
+        <div class="card-title">Ready to wrap up?</div>
+        <p>Package your learning context so you can resume this exact session later.</p>
+        <button class="btn-primary" id="btn-end-session">End Session &amp; Package Knowledge</button>
+        <div id="package-status" role="status" style="font-size: 0.82rem; color: var(--text-muted);"></div>
+      </div>
+      <div id="student-progress-panel" class="card" style="display: none;">
+        <div class="card-title"><svg class="icon"><use href="#i-chart"/></svg> My Progress &amp; Markdown Reports</div>
+        <div class="progress-grid">
+          <div class="metric"><div class="metric-value" id="progress-mastery">0%</div><div>Concept mastery</div></div>
+          <div class="metric"><div class="metric-value" id="progress-sessions">0</div><div>Sessions</div></div>
+          <div class="metric"><div class="metric-value" id="progress-concepts">0</div><div>Concepts tracked</div></div>
+        </div>
+        <label style="font-weight: 700;">Report preview</label>
+        <select id="progress-report-select" onchange="renderProgressDashboard()">
+          <option value="profile">STUDENT_PROFILE.md</option>
+          <option value="mastery">STUDENT_MASTERY.md</option>
+          <option value="analytics">STUDENT_ANALYTICS.md</option>
+        </select>
+        <pre class="markdown-preview" id="progress-markdown"></pre>
+        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+          <button class="btn-secondary" onclick="downloadProgressReport('profile')"><svg class="icon icon-sm"><use href="#i-download"/></svg> STUDENT_PROFILE.md</button>
+          <button class="btn-secondary" onclick="downloadProgressReport('mastery')"><svg class="icon icon-sm"><use href="#i-download"/></svg> STUDENT_MASTERY.md</button>
+          <button class="btn-secondary" onclick="downloadProgressReport('analytics')"><svg class="icon icon-sm"><use href="#i-download"/></svg> STUDENT_ANALYTICS.md</button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    // SHA-256 Security Hash & Encrypted Key Ciphers
+    const TARGET_SHA256_HASH = "08fa66ff907640fbeef915b4d0074cb8e359c0bcac336fc2805be4fd7500483b";
+    const ENCRYPTED_GEMINI_KEY_CIPHER = "EiFPMwkIZHwFfWpfXRtIMxFTX1IGCnhcR0JqXVQDH2QbSwdnaFZXZSckFQ4IYnNZRlhmShI=";
+    const ENCRYPTED_ELEVEN_KEY_CIPHER = "IBs+RgkHAVAFCF0CC2MTWRRSBwJXAQVaVwIyRFkRCQUDU1cJDFBWahQFFggJBVMHAV0B";
+
+    const GEMINI_MODEL_FALLBACKS = [
+      "gemini-3.1-pro-preview",
+      "gemini-2.5-flash",
+      "gemini-2.0-flash",
+      "gemini-flash-latest"
+    ];
+
+    let geminiApiKey = "";
+    let elevenLabsApiKey = "";
+    let activeRole = "student"; // 'student' or 'instructor'
+    let currentCourseId = null;
+    let activeCourseSnapshot = null;
+    let currentStudentName = sessionStorage.getItem("tutor_bot_student_name") || "";
+    let sessionState = createSessionState();
+
+    function createSessionState() {
+      return { version: 1, startedAt: new Date().toISOString(), transcript: [], notes: "" };
+    }
+
+    function downloadFile(contents, filename, type) {
+      const url = URL.createObjectURL(new Blob([contents], { type }));
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }
+
+    function safeFilename(value) {
+      return (value || 'tutor-session').replace(/[^a-z0-9_-]+/gi, '-').replace(/^-|-$/g, '').toLowerCase();
+    }
+
+    const CONTEXT_WINDOW_TURNS = 8;
+
+    function buildOptimizedTranscript(transcript) {
+      const recent = transcript.slice(-CONTEXT_WINDOW_TURNS);
+      const older = transcript.slice(0, -CONTEXT_WINDOW_TURNS);
+      const summary = older.length ? older.map(m => {
+        const compact = m.text.replace(/\s+/g, ' ').slice(0, 140);
+        return `- ${m.role === 'student' ? 'Student asked/said' : 'Tutor covered'}: ${compact}`;
+      }).join('\n') : 'No earlier turns.';
+      return `COMPRESSED EARLIER CONTEXT (${older.length} turns):\n${summary}\n\nRECENT VERBATIM TURNS (${recent.length}):\n${recent.map(m => `${m.role === 'student' ? 'Student' : 'Tutor'}: ${m.text}`).join('\n')}`;
+    }
+
+    async function callGeminiText(prompt) {
+      if (!geminiApiKey) throw new Error('AI service credentials are unavailable. Sign in through the faculty workspace first.');
+      for (const model of GEMINI_MODEL_FALLBACKS) {
+        try {
+          const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiApiKey}`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+          });
+          if (response.ok) {
+            const data = await response.json();
+            const text = data?.candidates?.[0]?.content?.parts?.map(p => p.text || '').join('').trim();
+            if (text) return text;
+          }
+        } catch (error) { /* Try the next supported model. */ }
+      }
+      throw new Error('Gemini did not return a lesson plan.');
+    }
+
+    function appendChatMessage(role, text, record = true, timestamp = new Date().toISOString()) {
+      const chatBox = document.getElementById('chat-messages');
+      const bubble = document.createElement('div');
+      bubble.className = `chat-bubble ${role === 'student' ? 'student' : 'tutor'}`;
+      const label = document.createElement('strong');
+      label.textContent = role === 'student' ? 'You:' : 'Tutor Talks:';
+      bubble.append(label, ` ${text}`);
+      if (role === 'tutor') {
+        const audioButton = document.createElement('button');
+        audioButton.className = 'audio-play-btn';
+        audioButton.innerHTML = '<svg class="icon icon-sm" aria-hidden="true"><use href="#i-volume"/></svg>';
+        audioButton.type = 'button';
+        audioButton.setAttribute('aria-label', 'Read tutor response aloud');
+        audioButton.onclick = () => playElevenLabsAudio(text);
+        bubble.appendChild(audioButton);
+      }
+      chatBox.appendChild(bubble);
+      chatBox.scrollTop = chatBox.scrollHeight;
+      if (record) sessionState.transcript.push({ role, text, timestamp });
+    }
+
+    // Default Seed Courses Data
+    const defaultCourses = [
+      {
+        id: "c_nyu_cs101",
+        title: "NYU CS101 — Intro to Artificial Intelligence",
+        code: "NYU-CS101",
+        helpLevel: "balanced",
+        blockAnswers: true,
+        honorCode: true,
+        domainBound: true,
+        customGuardrails: "Encourage students to break down algorithms step-by-step.",
+        modules: [
+          {
+            id: "m_cs101_1",
+            title: "Module 1: Foundations of Search & Problem Solving",
+            desc: "Breadth-First Search, Depth-First Search, and A* Heuristics",
+            content: "Search algorithms explore problem spaces using nodes and edges. BFS uses FIFO queue ensuring shortest path in unweighted graphs. DFS uses LIFO stack. A* search incorporates heuristic function f(n) = g(n) + h(n)."
+          },
+          {
+            id: "m_cs101_2",
+            title: "Module 2: Machine Learning & Neural Networks",
+            desc: "Supervised Learning, Loss Functions, and Gradient Descent",
+            content: "Supervised learning trains models on labeled datasets. Gradient descent updates weights W = W - alpha * dL/dW to minimize loss function."
+          }
+        ]
+      },
+      {
+        id: "c_nyu_psych201",
+        title: "NYU PSYCH201 — Cognitive Psychology",
+        code: "NYU-PSYCH201",
+        helpLevel: "socratic",
+        blockAnswers: true,
+        honorCode: true,
+        domainBound: true,
+        customGuardrails: "Ask students to ground claims in empirical psychological experiments.",
+        modules: [
+          {
+            id: "m_psych_1",
+            title: "Module 1: Memory & Cognitive Architecture",
+            desc: "Working Memory Model (Baddeley) and Spaced Retrieval",
+            content: "Working memory comprises Central Executive, Phonological Loop, and Visuospatial Sketchpad. Spaced retrieval enhances long-term memory consolidation."
+          }
+        ]
+      }
+    ];
+
+    // LocalStorage Helper
+    function getCoursesData() {
+      try {
+        const saved = localStorage.getItem("tutor_bot_courses");
+        return saved ? JSON.parse(saved) : defaultCourses;
+      } catch(e) {
+        return defaultCourses;
+      }
+    }
+
+    function saveCoursesData(courses) {
+      localStorage.setItem("tutor_bot_courses", JSON.stringify(courses));
+    }
+
+    // Cryptographic Helpers
+    async function computeSHA256(str) {
+      const msgBuffer = new TextEncoder().encode(str);
+      const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+
+    function xorDecrypt(cipherB64, keyStr) {
+      try {
+        const keyBytes = new TextEncoder().encode(keyStr);
+        const binaryStr = atob(cipherB64);
+        const decrypted = new Uint8Array(binaryStr.length);
+        for (let i = 0; i < binaryStr.length; i++) {
+          decrypted[i] = binaryStr.charCodeAt(i) ^ keyBytes[i % keyBytes.length];
+        }
+        return new TextDecoder().decode(decrypted);
+      } catch (e) {
+        return "";
+      }
+    }
+
+    // Navigation Screen Switcher
+    function showScreen(screenId) {
+      document.querySelectorAll('.portal-screen').forEach(s => s.classList.remove('active'));
+      document.getElementById(screenId).classList.add('active');
+    }
+
+    // Landing Screen Handlers
+    document.getElementById('btn-enter-student').onclick = () => {
+      const firstNameInput = document.getElementById('landing-first-name');
+      const lastInitialInput = document.getElementById('landing-last-initial');
+      const loginError = document.getElementById('student-login-error');
+      const firstName = firstNameInput.value.trim();
+      const lastInitial = lastInitialInput.value.trim().charAt(0).toUpperCase();
+
+      if (!firstName || !lastInitial) {
+        loginError.style.display = 'block';
+        (!firstName ? firstNameInput : lastInitialInput).focus();
+        return;
+      }
+
+      loginError.style.display = 'none';
+      currentStudentName = `${firstName.charAt(0).toUpperCase()}${firstName.slice(1)} ${lastInitial}.`;
+      sessionStorage.setItem("tutor_bot_student_name", currentStudentName);
+
+      const inputCode = document.getElementById('landing-class-code').value.trim().toUpperCase();
+      const courses = getCoursesData();
+      const found = courses.find(c => c.code.toUpperCase() === inputCode) || courses[0];
+      
+      currentCourseId = found.id;
+      openStudentPortal(found);
+    };
+
+    document.getElementById('btn-enter-instructor').onclick = () => {
+      showScreen('screen-faculty-auth');
+    };
+
+    // Faculty Authentication Gate
+    document.getElementById('btn-unlock-faculty').onclick = async () => {
+      const pass = document.getElementById('faculty-passcode').value.trim();
+      const err = document.getElementById('faculty-auth-error');
+      
+      const computedHash = await computeSHA256(pass);
+      if (computedHash === TARGET_SHA256_HASH) {
+        geminiApiKey = xorDecrypt(ENCRYPTED_GEMINI_KEY_CIPHER, pass);
+        elevenLabsApiKey = xorDecrypt(ENCRYPTED_ELEVEN_KEY_CIPHER, pass);
+        
+        err.style.display = 'none';
+        document.getElementById('role-badge').innerText = "FACULTY WORKSPACE";
+        document.getElementById('role-badge').className = "badge badge-success";
+        
+        openInstructorPortal();
+      } else {
+        err.style.display = 'block';
+      }
+    };
+
+    // Instructor Portal Logic
+    function openInstructorPortal() {
+      showScreen('screen-instructor');
+      renderInstructorCourses();
+      renderInstructorModules();
+      loadCourseGuardrailSettings();
+    }
+
+    function switchInstructorTab(tabId) {
+      document.querySelectorAll('#screen-instructor .tab-btn').forEach(b => b.classList.remove('active'));
+      event.target.classList.add('active');
+      
+      document.getElementById('tab-classes').style.display = tabId === 'tab-classes' ? 'flex' : 'none';
+      document.getElementById('tab-modules').style.display = tabId === 'tab-modules' ? 'flex' : 'none';
+      document.getElementById('tab-guardrails').style.display = tabId === 'tab-guardrails' ? 'flex' : 'none';
+    }
+
+    function renderInstructorCourses() {
+      const courses = getCoursesData();
+      const container = document.getElementById('course-list-container');
+      const selModule = document.getElementById('sel-instructor-course');
+      const selGuardrail = document.getElementById('sel-guardrail-course');
+
+      container.innerHTML = "";
+      selModule.innerHTML = "";
+      selGuardrail.innerHTML = "";
+
+      courses.forEach(c => {
+        container.innerHTML += `
+          <div class="card" style="padding: 14px; background: #f8fafc; flex-direction: row; justify-content: space-between; align-items: center;">
+            <div>
+              <div style="font-weight: 800; color: var(--text-main);">${c.title}</div>
+              <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">Class Access Code: <strong style="color: var(--primary);">${c.code}</strong> | ${c.modules.length} Modules</div>
+            </div>
+            <button class="btn-secondary" onclick="deleteCourse('${c.id}')" style="color: var(--accent-red); padding: 4px 10px; font-size: 0.78rem;">Delete</button>
+          </div>
+        `;
+
+        selModule.innerHTML += `<option value="${c.id}">${c.title} (${c.code})</option>`;
+        selGuardrail.innerHTML += `<option value="${c.id}">${c.title} (${c.code})</option>`;
+      });
+    }
+
+    document.getElementById('btn-create-course').onclick = () => {
+      const title = document.getElementById('new-course-title').value.trim();
+      if (!title) return;
+
+      const courses = getCoursesData();
+      const code = `NYU-${Math.floor(100 + Math.random() * 900)}`;
+      const newCourse = {
+        id: `c_${Date.now()}`,
+        title: title,
+        code: code,
+        helpLevel: "balanced",
+        blockAnswers: true,
+        honorCode: true,
+        domainBound: true,
+        customGuardrails: "",
+        modules: []
+      };
+
+      courses.push(newCourse);
+      saveCoursesData(courses);
+      document.getElementById('new-course-title').value = "";
+      renderInstructorCourses();
+      alert(`Course created successfully!\nStudent Class Access Code: ${code}`);
+    };
+
+    function deleteCourse(courseId) {
+      if (!confirm("Are you sure you want to delete this course?")) return;
+      let courses = getCoursesData();
+      courses = courses.filter(c => c.id !== courseId);
+      saveCoursesData(courses);
+      renderInstructorCourses();
+    }
+
+    // Sectioned Modules Management
+    function renderInstructorModules() {
+      const courses = getCoursesData();
+      const selectedId = document.getElementById('sel-instructor-course').value || courses[0]?.id;
+      const found = courses.find(c => c.id === selectedId);
+      const container = document.getElementById('module-list-container');
+
+      container.innerHTML = "";
+      if (!found || !found.modules.length) {
+        container.innerHTML = `<div style="font-size: 0.85rem; color: var(--text-muted); font-style: italic;">No modules uploaded for this course yet.</div>`;
+        return;
+      }
+
+      found.modules.forEach((m, idx) => {
+        container.innerHTML += `
+          <div class="card" style="padding: 14px; background: #ffffff;">
+            <div style="font-weight: 800; color: var(--primary);">${m.title}</div>
+            <div style="font-size: 0.82rem; color: var(--text-muted); margin: 2px 0;">${m.desc}</div>
+            <div style="font-size: 0.78rem; color: var(--text-main); background: #f8fafc; padding: 8px; border-radius: 6px; margin-top: 4px;">${m.content.substring(0, 120)}...</div>
+          </div>
+        `;
+      });
+    }
+
+    document.getElementById('btn-generate-lesson-plan').onclick = async () => {
+      const button = document.getElementById('btn-generate-lesson-plan');
+      const status = document.getElementById('lesson-plan-status');
+      const title = document.getElementById('new-module-title').value.trim();
+      const desc = document.getElementById('new-module-desc').value.trim();
+      const source = document.getElementById('new-module-content').value.trim();
+      if (!title || !source) return alert('Add a module title and source content first.');
+      button.disabled = true;
+      status.textContent = 'Gemini is synthesizing a structured lesson plan and retrieval context…';
+      try {
+        const plan = await callGeminiText(`You are an instructional designer. Build a concise, source-grounded lesson plan for the module below. Return Markdown with exactly these headings: ## Learning Objectives (measurable bullets), ## Core Concepts (concept: concise explanation), ## Teaching Strategy (sequenced activities and checks), ## Misconception Checks (misconception, diagnostic question, correction), and ## RAG Retrieval Context (dense standalone facts, terminology, relationships, and examples useful to an AI tutor). Do not add facts unsupported by the source.\n\nTitle: ${title}\nSummary: ${desc || 'None'}\nSource material:\n${source}`);
+        document.getElementById('new-module-content').value = `${source}\n\n---\n# AI Lesson Plan & RAG Context\n${plan}`;
+        status.textContent = 'Lesson plan added to the module context. Review it, then save the module.';
+      } catch (error) {
+        status.textContent = error.message || 'Lesson plan generation failed. Please try again.';
+      } finally { button.disabled = false; }
+    };
+
+    document.getElementById('btn-save-module').onclick = () => {
+      const courses = getCoursesData();
+      const selectedId = document.getElementById('sel-instructor-course').value;
+      const title = document.getElementById('new-module-title').value.trim();
+      const desc = document.getElementById('new-module-desc').value.trim();
+      const content = document.getElementById('new-module-content').value.trim();
+
+      if (!title || !content) return alert("Please fill in both Module Title and Module Content.");
+
+      const course = courses.find(c => c.id === selectedId);
+      if (course) {
+        course.modules.push({
+          id: `m_${Date.now()}`,
+          title: title,
+          desc: desc,
+          content: content
+        });
+        saveCoursesData(courses);
+        document.getElementById('new-module-title').value = "";
+        document.getElementById('new-module-desc').value = "";
+        document.getElementById('new-module-content').value = "";
+        renderInstructorModules();
+        alert("Course Module saved successfully!");
+      }
+    };
+
+    // AI Guardrail Configuration
+    function loadCourseGuardrailSettings() {
+      const courses = getCoursesData();
+      const selectedId = document.getElementById('sel-guardrail-course').value || courses[0]?.id;
+      const course = courses.find(c => c.id === selectedId);
+
+      if (course) {
+        document.getElementById('sel-help-level').value = course.helpLevel || "balanced";
+        document.getElementById('chk-block-answers').checked = course.blockAnswers !== false;
+        document.getElementById('chk-honor-code').checked = course.honorCode !== false;
+        document.getElementById('chk-domain-bound').checked = course.domainBound !== false;
+        document.getElementById('txt-custom-guardrails').value = course.customGuardrails || "";
+      }
+    }
+
+    document.getElementById('btn-save-guardrails').onclick = () => {
+      const courses = getCoursesData();
+      const selectedId = document.getElementById('sel-guardrail-course').value;
+      const course = courses.find(c => c.id === selectedId);
+
+      if (course) {
+        course.helpLevel = document.getElementById('sel-help-level').value;
+        course.blockAnswers = document.getElementById('chk-block-answers').checked;
+        course.honorCode = document.getElementById('chk-honor-code').checked;
+        course.domainBound = document.getElementById('chk-domain-bound').checked;
+        course.customGuardrails = document.getElementById('txt-custom-guardrails').value.trim();
+
+        saveCoursesData(courses);
+        alert("AI Guardrails & Help Scaffolding settings saved!");
+      }
+    };
+
+    // Student Portal Logic
+    function openStudentPortal(course, resumedSession = null) {
+      activeCourseSnapshot = course;
+      showScreen('screen-student');
+      switchStudentTab('tutor');
+      document.getElementById('role-badge').innerText = "STUDENT MODE";
+      document.getElementById('role-badge').className = "badge badge-primary";
+
+      document.getElementById('student-class-code-badge').innerText = `CLASS CODE: ${course.code}`;
+      document.getElementById('student-course-title').innerText = course.title;
+      document.getElementById('chat-messages').innerHTML = "";
+
+      const selMod = document.getElementById('sel-student-module');
+      selMod.innerHTML = "";
+
+      if (course.modules && course.modules.length) {
+        course.modules.forEach(m => {
+          selMod.innerHTML += `<option value="${m.id}">${m.title}</option>`;
+        });
+      } else {
+        selMod.innerHTML = `<option value="">General Course Tutoring</option>`;
+      }
+
+      if (resumedSession) {
+        sessionState = resumedSession;
+        document.getElementById('student-notes').value = resumedSession.notes || '';
+        if (resumedSession.learningContext?.moduleId) selMod.value = resumedSession.learningContext.moduleId;
+        if (resumedSession.learningContext?.tutoringMode) document.getElementById('sel-tutoring-mode').value = resumedSession.learningContext.tutoringMode;
+        (resumedSession.transcript || []).forEach(message => appendChatMessage(message.role, message.text, false, message.timestamp));
+      } else {
+        sessionState = createSessionState();
+        document.getElementById('student-notes').value = localStorage.getItem(`tutor_notes_${course.id}`) || '';
+        sessionState.notes = document.getElementById('student-notes').value;
+        appendChatMessage('tutor', `Welcome ${currentStudentName}! I am your AI Tutor configured for this course. Select a module above and ask any question to begin our tutoring session!`);
+      }
+      switchStudentModule();
+      persistProgressReports(getStudentProgress());
+    }
+
+    function switchStudentModule() {
+      const courses = getCoursesData();
+      const course = activeCourseSnapshot || courses.find(c => c.id === currentCourseId) || courses[0];
+      const modId = document.getElementById('sel-student-module').value;
+      const mod = course.modules.find(m => m.id === modId) || { title: "General Tutoring Session" };
+
+      document.getElementById('chat-module-header').innerText = mod.title;
+    }
+
+    function progressStorageKey(courseId = currentCourseId) {
+      return `tutor_progress_${safeFilename(currentStudentName)}_${courseId || 'general'}`;
+    }
+
+    function getStudentProgress() {
+      try {
+        return JSON.parse(localStorage.getItem(progressStorageKey())) || { sessions: [], mastery: {} };
+      } catch (error) { return { sessions: [], mastery: {} }; }
+    }
+
+    function masteryPercent(assessment) {
+      const level = String(assessment).match(/\b(Advanced|Proficient|Developing|Beginning)\b/i)?.[1]?.toLowerCase();
+      return ({ advanced: 95, proficient: 80, developing: 55, beginning: 25 })[level] || 40;
+    }
+
+    function buildProgressReports(progress = getStudentProgress()) {
+      const course = activeCourseSnapshot || {};
+      const entries = Object.values(progress.mastery || {});
+      const average = entries.length ? Math.round(entries.reduce((sum, item) => sum + item.percent, 0) / entries.length) : 0;
+      const last = progress.sessions.at(-1);
+      const profile = `# STUDENT_PROFILE\n\n- **Student:** ${currentStudentName || 'Student'}\n- **Course:** ${course.title || 'Course'}\n- **Class code:** ${course.code || 'N/A'}\n- **Sessions completed:** ${progress.sessions.length}\n- **Overall concept mastery:** ${average}%\n- **Last active:** ${last ? new Date(last.endedAt).toLocaleString() : 'No completed sessions'}\n`;
+      const mastery = `# STUDENT_MASTERY\n\n| Concept / module | Mastery | Last assessed |\n|---|---:|---|\n${entries.length ? entries.map(item => `| ${item.title.replace(/\|/g, '\\|')} | ${item.percent}% | ${new Date(item.updatedAt).toLocaleDateString()} |`).join('\n') : '| No concepts assessed yet | 0% | — |'}\n\n## Evidence and next steps\n\n${entries.length ? entries.map(item => `### ${item.title}\n\n${item.assessment}`).join('\n\n') : 'Complete a tutoring session to generate evidence-based mastery data.'}\n`;
+      const analytics = `# STUDENT_ANALYTICS\n\n- **Total sessions:** ${progress.sessions.length}\n- **Concepts tracked:** ${entries.length}\n- **Average mastery:** ${average}%\n- **Student messages:** ${progress.sessions.reduce((n, s) => n + s.studentMessages, 0)}\n- **Tutor responses:** ${progress.sessions.reduce((n, s) => n + s.tutorMessages, 0)}\n\n## Session history\n\n| Date | Module | Messages | Mastery |\n|---|---|---:|---:|\n${progress.sessions.length ? progress.sessions.map(s => `| ${new Date(s.endedAt).toLocaleDateString()} | ${s.moduleTitle.replace(/\|/g, '\\|')} | ${s.studentMessages + s.tutorMessages} | ${s.masteryPercent}% |`).join('\n') : '| No completed sessions | — | 0 | 0% |'}\n`;
+      return { profile, mastery, analytics, average, concepts: entries.length };
+    }
+
+    function persistProgressReports(progress) {
+      const reports = buildProgressReports(progress);
+      localStorage.setItem(progressStorageKey(), JSON.stringify(progress));
+      Object.entries({ 'STUDENT_PROFILE.md': reports.profile, 'STUDENT_MASTERY.md': reports.mastery, 'STUDENT_ANALYTICS.md': reports.analytics }).forEach(([name, content]) => {
+        localStorage.setItem(name, content);
+        sessionStorage.setItem(name, content);
+        localStorage.setItem(`${progressStorageKey()}_${name}`, content);
+      });
+      return reports;
+    }
+
+    const progressReportNames = {
+      profile: 'STUDENT_PROFILE.md',
+      mastery: 'STUDENT_MASTERY.md',
+      analytics: 'STUDENT_ANALYTICS.md'
+    };
+
+    function storeMarkdownReports(markdownReports) {
+      Object.values(progressReportNames).forEach(name => {
+        const content = markdownReports?.[name];
+        if (typeof content !== 'string') return;
+        localStorage.setItem(name, content);
+        sessionStorage.setItem(name, content);
+        localStorage.setItem(`${progressStorageKey()}_${name}`, content);
+      });
+    }
+
+    function getStoredMarkdownReport(type) {
+      const name = progressReportNames[type];
+      return localStorage.getItem(`${progressStorageKey()}_${name}`) || buildProgressReports()[type];
+    }
+
+    function switchStudentTab(tab) {
+      const progressMode = tab === 'progress';
+      document.querySelectorAll('.student-tutor-panel').forEach(panel => panel.style.display = progressMode ? 'none' : 'flex');
+      document.getElementById('student-progress-panel').style.display = progressMode ? 'flex' : 'none';
+      document.getElementById('student-tab-tutor').classList.toggle('active', !progressMode);
+      document.getElementById('student-tab-progress').classList.toggle('active', progressMode);
+      if (progressMode) renderProgressDashboard();
+    }
+
+    function renderProgressDashboard() {
+      const reports = buildProgressReports();
+      document.getElementById('progress-mastery').textContent = `${reports.average}%`;
+      document.getElementById('progress-sessions').textContent = getStudentProgress().sessions.length;
+      document.getElementById('progress-concepts').textContent = reports.concepts;
+      const selected = document.getElementById('progress-report-select').value;
+      document.getElementById('progress-markdown').textContent = getStoredMarkdownReport(selected);
+    }
+
+    function downloadProgressReport(type) {
+      downloadFile(getStoredMarkdownReport(type), progressReportNames[type], 'text/markdown;charset=utf-8');
+    }
+
+    // Gemini 3.1 Pro Tutoring Chat Loop
+    async function callGeminiTutor(promptText, courseContext, moduleContext, tutoringMode) {
+      if (!geminiApiKey) throw new Error('AI service credentials are unavailable. Sign in through the faculty workspace first.');
+
+      const mode = tutoringMode || document.getElementById('sel-tutoring-mode').value;
+      const systemInstruction = `You are Tutor Talks, an expert university AI tutor configured for the course "${courseContext.title}".
+The student's name is ${currentStudentName}. Address the student by their first name naturally during the tutoring session.
+TUTORING MODE: ${mode}.
+COURSE MODULE MATERIAL:
+${moduleContext.content || "General course concept guidance."}
+
+INSTRUCTOR SCAFFOLDING & HELP LEVEL:
+- Help Level: ${courseContext.helpLevel || "balanced"}.
+- Guardrails:
+  1. Block direct answer dumps: ${courseContext.blockAnswers ? "ENABLED (Never solve homework directly, ask questions to guide student)" : "DISABLED"}.
+  2. Academic Honor Code: ${courseContext.honorCode ? "ENABLED (Refuse essay writing or exam cheating)" : "DISABLED"}.
+  3. Domain Boundaries: ${courseContext.domainBound ? "ENABLED (Focus strictly on course domain)" : "DISABLED"}.
+  4. Instructor Directive: ${courseContext.customGuardrails || "None"}.
+
+Instructions:
+Be encouraging, academic, and concise (2-4 sentences max per response). Guide the student according to the configured tutoring mode and guardrails.
+
+TOKEN-OPTIMIZED SESSION CONTEXT (compressed history plus sliding recent window):
+${buildOptimizedTranscript(sessionState.transcript)}`;
+
+      for (const model of GEMINI_MODEL_FALLBACKS) {
+        try {
+          const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiApiKey}`;
+          const payload = {
+            contents: [{ parts: [{ text: `${systemInstruction}\n\nStudent Question: ${promptText}` }] }]
+          };
+
+          const resp = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+
+          if (resp.ok) {
+            const data = await resp.json();
+            const reply = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+            if (reply) return reply;
+          }
+        } catch(e) {}
+      }
+
+      return "Great question! Let's think about this step-by-step. What do you think is the first key concept here?";
+    }
+
+    // Play ElevenLabs Audio Response
+    async function playElevenLabsAudio(text) {
+      if (!elevenLabsApiKey) return;
+      try {
+        const url = "https://api.elevenlabs.io/v1/text-to-speech/EXAVITQu4vr4xnSDxMaL";
+        const resp = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'xi-api-key': elevenLabsApiKey
+          },
+          body: JSON.stringify({
+            text: text,
+            model_id: "eleven_multilingual_v2"
+          })
+        });
+
+        if (resp.ok) {
+          const blob = await resp.blob();
+          const audio = new Audio(URL.createObjectURL(blob));
+          audio.play();
+        }
+      } catch(e) {}
+    }
+
+    document.getElementById('btn-send-chat').onclick = async () => {
+      const input = document.getElementById('student-chat-input');
+      const text = input.value.trim();
+      if (!text) return;
+
+      input.value = "";
+      const chatBox = document.getElementById('chat-messages');
+
+      appendChatMessage('student', text);
+
+      // Get Course and Module Context
+      const courses = getCoursesData();
+      const course = activeCourseSnapshot || courses.find(c => c.id === currentCourseId) || courses[0];
+      const modId = document.getElementById('sel-student-module').value;
+      const mod = course.modules.find(m => m.id === modId) || { title: "General", content: "" };
+
+      // Call Gemini AI Tutor
+      const reply = await callGeminiTutor(text, course, mod);
+
+      // Append Tutor Bubble
+      appendChatMessage('tutor', reply);
+    };
+
+    document.getElementById('student-chat-input').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') document.getElementById('btn-send-chat').click();
+    });
+
+    document.getElementById('btn-clear-chat').onclick = () => {
+      const chatBox = document.getElementById('chat-messages');
+      chatBox.innerHTML = '';
+      sessionState.transcript = [];
+      appendChatMessage('tutor', `Chat cleared, ${currentStudentName}! Ask any question to continue our session.`);
+    };
+
+    document.getElementById('student-notes').addEventListener('input', (event) => {
+      sessionState.notes = event.target.value;
+      if (currentCourseId) localStorage.setItem(`tutor_notes_${currentCourseId}`, event.target.value);
+    });
+
+    document.getElementById('btn-export-notes').onclick = () => {
+      if (!window.jspdf?.jsPDF) return alert('The PDF library could not be loaded. Check your internet connection and try again.');
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      const course = activeCourseSnapshot;
+      const moduleTitle = document.getElementById('chat-module-header').textContent;
+      doc.setFontSize(18);
+      doc.text('Tutor Talks — Student Notes', 14, 18);
+      doc.setFontSize(10);
+      doc.text(`Student: ${currentStudentName}`, 14, 27);
+      doc.text(`Course: ${course?.title || 'Course'}`, 14, 33);
+      doc.text(`Module: ${moduleTitle}`, 14, 39);
+      doc.text(`Exported: ${new Date().toLocaleString()}`, 14, 45);
+      doc.setFontSize(11);
+      const lines = doc.splitTextToSize(document.getElementById('student-notes').value || 'No notes recorded.', 182);
+      const linesPerPage = 52;
+      for (let offset = 0; offset < lines.length; offset += linesPerPage) {
+        if (offset) doc.addPage();
+        doc.text(lines.slice(offset, offset + linesPerPage), 14, offset ? 18 : 56);
+      }
+      doc.save(`${safeFilename(course?.code)}-student-notes.pdf`);
+    };
+
+    async function generateMasteryAssessment(course, module) {
+      const dialogue = buildOptimizedTranscript(sessionState.transcript);
+      if (!sessionState.transcript.some(m => m.role === 'student')) return 'Insufficient conversation evidence to assess mastery.';
+      const assessmentPrompt = `Assess the student's demonstrated mastery from this tutoring transcript. Return a concise evidence-based summary with: overall level (Beginning, Developing, Proficient, or Advanced), concepts demonstrated, misconceptions or gaps, and recommended next steps. Do not invent evidence.\n\nCourse: ${course.title}\nModule: ${module.title}\nTranscript:\n${dialogue}`;
+      return callGeminiTutor(assessmentPrompt, { ...course, blockAnswers: false, honorCode: false, domainBound: false }, module, 'Assessment');
+    }
+
+    document.getElementById('btn-end-session').onclick = async () => {
+      const button = document.getElementById('btn-end-session');
+      const status = document.getElementById('package-status');
+      const course = activeCourseSnapshot;
+      const moduleId = document.getElementById('sel-student-module').value;
+      const module = course.modules?.find(m => m.id === moduleId) || { id: '', title: 'General Tutoring Session', content: '' };
+      button.disabled = true;
+      status.textContent = 'Creating AI mastery assessment and packaging your session…';
+      try {
+        sessionState.notes = document.getElementById('student-notes').value;
+        const masteryAssessment = await generateMasteryAssessment(course, module);
+        const packagedAt = new Date().toISOString();
+        const progress = getStudentProgress();
+        const percent = masteryPercent(masteryAssessment);
+        progress.mastery[module.id || 'general'] = { title: module.title, percent, assessment: masteryAssessment, updatedAt: packagedAt };
+        const sessionRecord = { sessionId: sessionState.startedAt, endedAt: packagedAt, moduleId: module.id, moduleTitle: module.title, masteryPercent: percent, studentMessages: sessionState.transcript.filter(m => m.role === 'student').length, tutorMessages: sessionState.transcript.filter(m => m.role === 'tutor').length };
+        const existingSession = progress.sessions.findIndex(item => item.sessionId === sessionState.startedAt);
+        if (existingSession >= 0) progress.sessions[existingSession] = sessionRecord;
+        else progress.sessions.push(sessionRecord);
+        const reports = persistProgressReports(progress);
+        const tutorPackage = {
+          format: 'tutor-session',
+          version: 1,
+          packagedAt,
+          student: { displayName: currentStudentName },
+          course: JSON.parse(JSON.stringify(course)),
+          learningContext: {
+            courseId: course.id,
+            moduleId: module.id,
+            moduleTitle: module.title,
+            tutoringMode: document.getElementById('sel-tutoring-mode').value
+          },
+          startedAt: sessionState.startedAt,
+          endedAt: packagedAt,
+          transcript: sessionState.transcript,
+          notes: sessionState.notes,
+          masteryAssessment,
+          progress: JSON.parse(JSON.stringify(progress)),
+          markdownReports: {
+            'STUDENT_PROFILE.md': reports.profile,
+            'STUDENT_MASTERY.md': reports.mastery,
+            'STUDENT_ANALYTICS.md': reports.analytics
+          }
+        };
+        downloadFile(JSON.stringify(tutorPackage, null, 2), `${safeFilename(course.code)}-${safeFilename(currentStudentName)}.tutor`, 'application/json');
+        status.textContent = 'Session packaged successfully. Keep the .tutor file to resume later.';
+      } catch (error) {
+        status.textContent = 'Could not package this session. Please try again.';
+      } finally {
+        button.disabled = false;
+      }
+    };
+
+    document.getElementById('btn-upload-tutor').onclick = () => document.getElementById('tutor-file-input').click();
+    document.getElementById('tutor-file-input').addEventListener('change', async (event) => {
+      const file = event.target.files[0];
+      event.target.value = '';
+      if (!file) return;
+      try {
+        const data = JSON.parse(await file.text());
+        if (data.format !== 'tutor-session' || data.version !== 1 || !data.student?.displayName || !data.course?.id || !Array.isArray(data.transcript)) {
+          throw new Error('Invalid tutor package');
+        }
+        currentStudentName = data.student.displayName;
+        currentCourseId = data.course.id;
+        sessionStorage.setItem('tutor_bot_student_name', currentStudentName);
+        openStudentPortal(data.course, {
+          version: data.version,
+          startedAt: data.startedAt || new Date().toISOString(),
+          transcript: data.transcript,
+          notes: typeof data.notes === 'string' ? data.notes : '',
+          learningContext: data.learningContext || {},
+          masteryAssessment: data.masteryAssessment || ''
+        });
+        if (data.progress && Array.isArray(data.progress.sessions) && data.progress.mastery && typeof data.progress.mastery === 'object') {
+          localStorage.setItem(progressStorageKey(), JSON.stringify(data.progress));
+        }
+        storeMarkdownReports(data.markdownReports);
+        renderProgressDashboard();
+        document.getElementById('package-status').textContent = `Resumed session packaged ${data.packagedAt ? new Date(data.packagedAt).toLocaleString() : 'previously'}.`;
+      } catch (error) {
+        alert('This file is not a valid Tutor Talks .tutor session package.');
+      }
+    });
+
+  </script>
+</body>
+</html>

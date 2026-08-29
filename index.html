@@ -551,17 +551,20 @@
     let firebaseAuth = null, firestoreDb = null, firebaseStorage = null, firebaseUser = null;
     let firebaseReady = false, cloudCoursesLoaded = false, unsubscribeCourses = null;
 
-    // Public Firebase web identifiers can be injected by the deployment before this script.
-    // Never place service-account keys or other private credentials in browser code.
+    // Firebase Web Configuration (Optional / Runtime-injected)
+    // Runs in 100% standalone local mode by default.
+    let storedFirebase = {};
+    try { storedFirebase = JSON.parse(localStorage.getItem('tutor_talks_firebase_config') || '{}'); } catch(e) {}
+    
     const firebaseConfig = Object.assign({
-      apiKey: "AIzaSyDOm74jFz9pZ0Is0wGMN5z9j47nI4X9IwA",
-      authDomain: "tutortalks-e655c.firebaseapp.com",
-      projectId: "tutortalks-e655c",
-      storageBucket: "tutortalks-e655c.firebasestorage.app",
-      messagingSenderId: "556415920714",
-      appId: "1:556415920714:web:906b5e660663ccc09914b3",
-      measurementId: "G-D7R21VZ76C"
-    }, window.TUTOR_TALKS_FIREBASE_CONFIG || {});
+      apiKey: "",
+      authDomain: "",
+      projectId: "",
+      storageBucket: "",
+      messagingSenderId: "",
+      appId: "",
+      measurementId: ""
+    }, storedFirebase, window.TUTOR_TALKS_FIREBASE_CONFIG || {});
 
     async function initializeFirebase() {
       if (!window.firebase || !firebaseConfig.apiKey || !firebaseConfig.appId) {
@@ -974,12 +977,14 @@
       const pass = document.getElementById('faculty-passcode').value.trim();
       const err = document.getElementById('faculty-auth-error');
 
-      // Take the known passcode path immediately; retain the hash check for compatibility.
-      let validPasscode = pass === 'Spark06231912';
-      if (!validPasscode) {
-        try { validPasscode = await computeSHA256(pass) === TARGET_SHA256_HASH; }
-        catch (error) { console.warn('Passcode hashing unavailable in this browser.', error); }
+      let validPasscode = false;
+      try {
+        const computedHash = await computeSHA256(pass);
+        validPasscode = (computedHash === TARGET_SHA256_HASH);
+      } catch (error) {
+        console.warn('Passcode verification error.', error);
       }
+
       if (validPasscode) {
         geminiApiKey = xorDecrypt(ENCRYPTED_GEMINI_KEY_CIPHER, pass);
         elevenLabsApiKey = xorDecrypt(ENCRYPTED_ELEVEN_KEY_CIPHER, pass);

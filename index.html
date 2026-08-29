@@ -245,7 +245,7 @@
               <input type="text" id="landing-first-name" placeholder="First Name" aria-label="First Name" required autocomplete="given-name" />
               <input type="text" id="landing-last-initial" placeholder="Last Initial" aria-label="Last Initial" required maxlength="1" autocomplete="family-name" />
             </div>
-            <input type="text" id="landing-class-code" placeholder="Enter Class Code (e.g. NYU-CS101)..." style="margin-bottom: 10px;" autocomplete="off" />
+            <input type="text" id="landing-class-code" placeholder="Enter Class Code..." style="margin-bottom: 10px;" autocomplete="off" />
             <div id="student-login-error" role="alert" style="color: var(--accent-red); font-size: 0.82rem; font-weight: 700; display: none;">Please enter your first name and last initial.</div>
             <button class="btn-primary" id="btn-enter-student" style="width: 100%;">Enter Course</button>
             <button class="btn-secondary" id="btn-upload-tutor" style="width: 100%; margin-top: 8px;"><svg class="icon icon-sm"><use href="#i-upload"/></svg> Upload .tutor File</button>
@@ -292,7 +292,7 @@
         <p style="font-size: 0.88rem; color: var(--text-muted); margin: 0;">Create new courses. Each course generates a unique Class Code for student login.</p>
 
         <div style="display: flex; gap: 10px; margin-top: 8px;">
-          <input type="text" id="new-course-title" placeholder="New Course Title (e.g. NYU CS101 - Intro to AI)..." />
+          <input type="text" id="new-course-title" placeholder="New Course Title (e.g. Introduction to Biology)..." />
           <button class="btn-primary" id="btn-create-course" style="white-space: nowrap;">Create Course</button>
         </div>
 
@@ -433,8 +433,8 @@
       <div class="card student-tutor-panel" style="background: linear-gradient(135deg, #f3f7fb 0%, #e8f0f7 100%); border-color: #cbd9e7;">
         <div style="display: flex; justify-content: space-between; align-items: center;">
           <div>
-            <span class="badge badge-primary" id="student-class-code-badge">CODE: NYU-CS101</span>
-            <div style="font-size: 1.25rem; font-weight: 800; margin-top: 4px;" id="student-course-title">NYU CS101 — Intro to Artificial Intelligence</div>
+            <span class="badge badge-primary" id="student-class-code-badge">CLASS CODE</span>
+            <div style="font-size: 1.25rem; font-weight: 800; margin-top: 4px;" id="student-course-title">Active Course</div>
           </div>
           <button class="btn-secondary" onclick="showScreen('screen-landing')" style="min-height: 36px; font-size: 0.8rem;">Change Class</button>
         </div>
@@ -837,43 +837,43 @@
     // Default Seed Courses Data
     const defaultCourses = [
       {
-        id: "c_nyu_cs101",
-        title: "NYU CS101 — Intro to Artificial Intelligence",
-        code: "NYU-CS101",
+        id: "c_demo_101",
+        title: "Demo 101 — Introduction to Logic & AI",
+        code: "DEMO-101",
         helpLevel: "balanced",
         blockAnswers: true,
         honorCode: true,
         domainBound: true,
-        customGuardrails: "Encourage students to break down algorithms step-by-step.",
+        customGuardrails: "Encourage students to break down problems step-by-step.",
         modules: [
           {
-            id: "m_cs101_1",
-            title: "Module 1: Foundations of Search & Problem Solving",
-            desc: "Breadth-First Search, Depth-First Search, and A* Heuristics",
+            id: "m_demo_1",
+            title: "Module 1: Problem Solving & Heuristics",
+            desc: "Foundational search strategies and algorithmic reasoning",
             content: "Search algorithms explore problem spaces using nodes and edges. BFS uses FIFO queue ensuring shortest path in unweighted graphs. DFS uses LIFO stack. A* search incorporates heuristic function f(n) = g(n) + h(n)."
           },
           {
-            id: "m_cs101_2",
-            title: "Module 2: Machine Learning & Neural Networks",
-            desc: "Supervised Learning, Loss Functions, and Gradient Descent",
+            id: "m_demo_2",
+            title: "Module 2: Machine Learning Fundamentals",
+            desc: "Supervised learning and optimization models",
             content: "Supervised learning trains models on labeled datasets. Gradient descent updates weights W = W - alpha * dL/dW to minimize loss function."
           }
         ]
       },
       {
-        id: "c_nyu_psych201",
-        title: "NYU PSYCH201 — Cognitive Psychology",
-        code: "NYU-PSYCH201",
+        id: "c_sample_201",
+        title: "Sample 201 — Cognitive Science & Learning",
+        code: "SAMPLE-201",
         helpLevel: "socratic",
         blockAnswers: true,
         honorCode: true,
         domainBound: true,
-        customGuardrails: "Ask students to ground claims in empirical psychological experiments.",
+        customGuardrails: "Ask students to ground claims in empirical evidence.",
         modules: [
           {
-            id: "m_psych_1",
+            id: "m_sample_1",
             title: "Module 1: Memory & Cognitive Architecture",
-            desc: "Working Memory Model (Baddeley) and Spaced Retrieval",
+            desc: "Working memory models and spaced retrieval",
             content: "Working memory comprises Central Executive, Phonological Loop, and Visuospatial Sketchpad. Spaced retrieval enhances long-term memory consolidation."
           }
         ]
